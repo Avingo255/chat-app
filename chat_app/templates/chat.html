@@ -1,0 +1,57 @@
+{% extends "group_list.html" %}
+
+{% block title %}
+<title>Home</title>
+{% endblock %}
+
+{% block head %}
+{{ super() }}
+<script>
+    // Scroll to the bottom of the chat window
+    const messages = document.querySelector('.messages');
+    messages.scrollTop = messages.scrollHeight;
+</script>
+{% endblock %}
+
+{% block content %}
+{{ super() }}
+
+<div class="chat-window">
+    <div class="messages">
+        <div class="message other-user">
+            <div class="message-info">
+                <div class="username">User1</div>
+                <div class="datetime">2024-08-30 15:48</div>
+            </div>
+            <div class="text">Hello!</div>
+        </div>
+        <!-- Add more messages to demonstrate scrollbar -->
+        <div class="message other-user">
+            <div class="message-info">
+                <div class="username">User2</div>
+                <div class="datetime">2024-08-30 15:49</div>
+            </div>
+            <div class="text">Hi there!</div>
+        </div>
+        <div class="message other-user">
+            <div class="message-info">
+                <div class="username">User1</div>
+                <div class="datetime">2024-08-30 15:50</div>
+            </div>
+            <div class="text">How are you?</div>
+        </div>
+        <div class="message current-user">
+            <div class="message-info current-user-info">
+                <div class="username">You</div>
+                <div class="datetime">2024-08-30 15:51</div>
+            </div>
+            <div class="text">I'm good, thanks!</div>
+        </div>
+    </div>
+    <div class="send-message">
+        <input type="text" placeholder="Type your message...">
+        <button>Send</button>
+    </div>
+</div>
+
+{% endblock %}

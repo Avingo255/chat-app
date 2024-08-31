@@ -972,7 +972,4 @@ class InviteRequestTable:
             return query_db(query, parameter_dictionary=parameter_dictionary, no_return=True)
         
 if __name__ == "__main__":
-    #UserTable.create_user('avinash255', 'Avinash', 'avinash.gogineni@outlook.com', 'Avinash@12523')
-    # GroupTable.create_group('Group 1')
-    # UserGroupTable.create_user_group('avinash255', 1)
     pass

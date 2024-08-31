@@ -1,5 +1,5 @@
 from chat_app import app, turbo
-from flask import render_template, flash, redirect, url_for, request, jsonify
+from flask import render_template, flash, redirect, url_for, request, jsonify, make_response
 from flask_login import current_user, login_user, logout_user, login_required
 from urllib.parse import urlsplit
 
@@ -13,6 +13,7 @@ from chat_app.forms import SignInForm, SignUpForm
 
 
 #LOGIN
+"""
 @app.context_processor
 def inject_group_record():
     group_record = GroupTable.get_group_record_by_group_id(1)
@@ -24,15 +25,53 @@ def update_group_list():
             time.sleep(1)
             print('updating group list')
             turbo.push(turbo.replace(render_template('group_list.html'), 'group_list'))
+            
+
+@app.route('/update')
+def update():
+    # Simulate some dynamic data
+    group_record = GroupTable.get_group_record_by_group_id(1)
+    return turbo.stream(turbo.append(render_template('group_list.html', group_record=group_record), target='dynamic-content'))
 
 
+"""
 @app.route('/')
 @app.route('/index')
 @login_required
 def index():
-    threading.Thread(target=update_group_list).start()
+    return render_template('index.html', title='Home')
+
+@app.route('/group-list', methods = ['POST']) 
+def group_list(): 
+    user_group_ids = UserTable.get_user_groups(current_user.username)
     
-    return render_template('index.html', title='Home', smth='something')
+    group_name_list = []
+    for id in user_group_ids:
+        group_name_list.append(GroupTable.get_group_record_by_group_id(id)['group_name'])
+    
+    return make_response(jsonify(group_name_list), 200)
+
+
+
+@app.route('/group-messages', methods = ['POST'])
+def group_messages():
+    group_id = request.args.get('group_id')
+    messages = GroupTable.get_all_group_messages(group_id)
+    return make_response(jsonify(messages), 200)
+
+
+@app.route('/chat/<group_id>')
+@login_required
+def chat_window(group_id):
+    #check group with group_id exists
+    if not GroupTable.get_group_record_by_group_id(group_id):
+        return redirect(url_for('index'))
+    elif group_id not in UserTable.get_user_groups(current_user.username):
+        return redirect(url_for('index'))
+    else:    
+        group_display_name = GroupTable.get_group_record_by_group_id(group_id)['group_name']
+    
+        return render_template('chat.html', group_display_name=group_display_name)
 
 
 @app.route('/sign-in', methods=['GET', 'POST'])

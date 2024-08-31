@@ -1,27 +1,38 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
     <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="{{ url_for('static', filename='base_styles.css') }}">
         {% if title %}
             <title>{{ title }}</title>
         {% else %}
             <title>Chat App</title>
         {% endif %}
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-        {{ turbo()}}
+
+        {% block dynamic_css %}
+        {% endblock %}
+
         {% block head %}{% endblock %}
     </head>
 
     <body>
-        <div>
-            Chat App:
-            <a href="{{ url_for('index') }}">Home</a>
-            {% if current_user.is_authenticated %} 
-                <a href="{{ url_for('sign_out') }}">Sign Out</a>
-            {% else %}
-                <a href="{{ url_for('sign_in') }}">Sign In</a>
-            {% endif %}
+        <div class="navbar">
+            <div class="title">Chat App</div>
+            <div class="sublinks">
+                <a href="{{ url_for('index') }}">Home</a>
+
+                {% if current_user.is_authenticated %} 
+                    <a href="{{ url_for('sign_out') }}">Sign Out</a>
+                {% else %}
+                    <a href="{{ url_for('sign_in') }}">Sign In</a>
+                {% endif %}
+
+                <a href="#">Link 4</a>
+            </div>
         </div>
 
-        <hr>
         {% with messages = get_flashed_messages() %}
             {% if messages %}
 
@@ -32,7 +43,9 @@
             </ul>
             {% endif %}
         {% endwith %}
-
-        {% block content %}{% endblock %}
+        <div class="container">
+            {% block group_list %}{% endblock %}
+            {% block content %}{% endblock %}
+        </div>
     </body>
 </html>

@@ -1,5 +1,64 @@
-<div id="group_list">
-    <p>Group ID: {{ group_id }}</p>
-    <p>Group Name: {{ group_name }}</p>
-    <p>Date and Time Created: {{ datetime_created }}</p>
+{% extends "base.html" %}
+
+{% block head %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='group_list_styles.css') }}">
+<script>
+    async function update_group_list() {
+        try {
+            const response = await fetch(`${window.origin}/group-list`, {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+            });
+
+            if (response.status !== 200) {
+                console.log(`Looks like there was a problem. Status Code: ${response.status}`);
+            } else {
+                const data = await response.json();
+                console.log(data);
+
+                let groupListHTML = "";
+                data.forEach(function (group) {
+                    console.log(group);
+                    groupListHTML += `
+                        <a href="#" class="group">
+                            <div class="group-name">${group}</div>
+                            <div class="last-message">Last message...</div>
+
+                            <!--<div class="group-name" id="$/{group.id}">$/{group}</div>-->
+                            <!--<div class="last-message">$/{group.lastMessage}</div>-->
+                        </a>
+                    `;
+                });
+                document.querySelector('.chat-groups').innerHTML = groupListHTML;
+            }
+        } catch (error) {
+            console.error(error);
+        }
+
+        requestAnimationFrame(update_group_list);
+    }
+
+    requestAnimationFrame(update_group_list);
+</script>
+{% endblock %}
+
+
+{% block group_list %}
+<div class="chat-groups">
+    <!-- E.g. 
+    <a href="#" class="group">
+        <div class="group-name">Group 1</div>
+        <div class="last-message">Last message...</div>
+    </a>
+    -->
+    <a href="#" class="group" style="font-style:italic;">
+        <div class="group-name">Groups Loading...</div>
+    </a>
 </div>
+
+{% endblock %}
+

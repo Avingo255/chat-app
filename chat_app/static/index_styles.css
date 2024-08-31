@@ -1,0 +1,15 @@
+.placeholder-message {
+    font-size: 20px; /* Slightly reduced font size */
+    color: #888;
+    text-align: center;
+    padding-top: 250px;
+    font-style: italic;
+}
+
+.chat-window {
+    width: 72%; /* Slightly reduced width */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background-color: #121212;
+}

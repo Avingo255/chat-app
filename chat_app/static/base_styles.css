@@ -1,0 +1,33 @@
+body {
+    margin: 0;
+    font-family: 'Roboto', sans-serif;
+    background-color: #121212;
+    color: #ffffff;
+    overflow: hidden;
+    font-size: 1.125rem; /* Slightly reduced font size */
+}
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 22px; /* Slightly reduced padding */
+    background-color: #1f1f1f;
+    border-bottom: 1px solid #333333;
+}
+
+.navbar .title {
+    font-size: 32px; /* Slightly reduced font size */
+}
+
+.navbar .sublinks a {
+    color: #ffffff;
+    margin-left: 18px; /* Slightly reduced margin */
+    text-decoration: none;
+    font-size: 17px; /* Slightly reduced font size */
+}
+
+.container {
+    display: flex;
+    height: calc(100vh - 64px); /* Adjust height based on navbar size */
+}
