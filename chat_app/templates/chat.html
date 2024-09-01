@@ -108,6 +108,8 @@
                 console.log(`Looks like there was a problem. Status Code: ${response.status}`);
             } else {
                 const data = await response.json();
+             
+
                 console.log(data);
                 
                 let messageListHTML = "";
@@ -149,9 +151,7 @@
                     previousSender = message.sender_username;
                     previousDateTime = currentDateTime;
                 });
-                if (messageListHTML === "") {
-                    messageListHTML = `<div class="placeholder-message">No messages yet.</div>`;
-                } else if (document.querySelector('.messages').innerHTML !== messageListHTML) {
+                if (document.querySelector('.messages').innerHTML !== messageListHTML) {
                     document.querySelector('.messages').innerHTML = messageListHTML;
                     scroll_to_bottom();
                 } else {

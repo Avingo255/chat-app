@@ -9,6 +9,7 @@
     color: #ffffff;
     text-align: center;
     border-right: 1px solid #333; /* Grey border color */
+    vertical-align: middle;
 }
 
 .auth-text h2 {
