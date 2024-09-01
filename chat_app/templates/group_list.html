@@ -19,19 +19,36 @@
             } else {
                 const data = await response.json();
                 console.log(data);
-
                 let groupListHTML = "";
                 data.forEach(function (group) {
                     console.log(group);
-                    groupListHTML += `
-                        <a href="#" class="group">
-                            <div class="group-name">${group}</div>
-                            <div class="last-message">Last message...</div>
-
-                            <!--<div class="group-name" id="$/{group.id}">$/{group}</div>-->
-                            <!--<div class="last-message">$/{group.lastMessage}</div>-->
+                    if (group.any_messages == false) {
+                        groupListHTML += `
+                        <a href="${window.origin}/chat/${group.group_id}" id="group_${group.group_id}" class="group">
+                            <div class="top-level">
+                                <div class="group-name">${group.group_name}</div>
+                            </div>
+                            <div class="last-message">No messages yet.</div>
                         </a>
-                    `;
+                        `;
+                    } else {
+                        let max_length = 30;
+                        if (group.last_message.length > max_length) {
+                            last_message = group.last_message.slice(0, max_length) + '...';
+                        } else {
+                            last_message = group.last_message;
+                        }
+                        groupListHTML += `
+                        <a href="${window.origin}/chat/${group.group_id}" id="group_${group.group_id}" class="group">
+                            <div class="top-level">
+                                <div class="group-name">${group.group_name}</div>
+                                <div class="group-last-message-datetime">${group.last_message_datetime}</div>
+                            </div>
+                            <div class="last-message">${group.last_message_user_display_name}: ${last_message}</div>
+                        </a>
+                        `;
+                    }
+                    
                 });
                 document.querySelector('.chat-groups').innerHTML = groupListHTML;
             }

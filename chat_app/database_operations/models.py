@@ -1,6 +1,7 @@
 from werkzeug.security import generate_password_hash
 from chat_app.database_operations.cloud_database import query_db #use this when running server
 #from cloud_database import query_db #use this when running this file on its own
+import datetime
 
 class UserTable:
     """Represents user table in database1"""   
@@ -157,12 +158,33 @@ class UserTable:
                 'is_anonymous': raw_tuple_output[7]
             }
             return dictionary_output 
+        
+    @staticmethod
+    def check_user_in_group(username: str, group_id: int) -> bool:
+        """_summary_
+        Checks if user with username is in group with group_id
+        
+        Args:
+            username (str): username (PK) of user
+            group_id (int): group_id (PK) of group
+        
+        Returns:
+            bool: True if user is in group, False otherwise
+        """
+        if username in UserTable.INVALID_FIELD_VALUES or group_id in UserTable.INVALID_FIELD_VALUES:
+            raise Exception("Error: A field value is empty.")
+        elif username not in UserTable.get_all_usernames():
+            raise Exception(f"Error: User '{username}' does not exist.")
+        elif group_id not in GroupTable.get_all_group_ids():
+            raise Exception(f"Error: Group '{group_id}' does not exist.")
+        else:
+            return [username, group_id] in UserGroupTable.get_all_user_group_ids()
     
     
     @staticmethod
-    def get_user_groups(username: str) -> list:
+    def get_user_groups(username: str) -> dict:
         """_summary_
-        Returns list of group_ids for a given username
+        Returns dict of group_id, group_name, any_messages, last_message_user_display_name, last_message, last_message_datetime for all groups user is in
         
         Args:
             username (str): username (PK) of user to get groups for
@@ -172,21 +194,91 @@ class UserTable:
             Exception: username not in table
 
         Returns:
-            list: list of all group_ids of groups which user is in"""
+            dict: group_id, group_name, any_messages, last_message_user_display_name, last_message, last_message_datetime for all groups user is in
+            \nif any_messages is False, last_message_user_display_name, last_message, last_message_datetime will be None
+        """
         
         if username in UserTable.INVALID_FIELD_VALUES:
             raise Exception("Error: Username cannot be empty.")
         elif username not in UserTable.get_all_usernames():
             raise Exception(f"Error: User '{username}' does not exist.")
         else:
+            query = """
+            SELECT 
+                g.group_id, 
+                g.group_name,
+                EXISTS(
+                    SELECT 1 
+                    FROM database1.message 
+                    WHERE group_id = g.group_id
+                    LIMIT 1
+                ) AS any_messages,
+                u.display_name AS last_message_user_display_name,
+                m.message_content AS last_message,
+                m.message_date_time AS last_message_datetime
+            FROM 
+                database1.group g
+            JOIN 
+                database1.user_group ug ON g.group_id = ug.group_id
+            LEFT JOIN 
+                (
+                    SELECT 
+                        message_content, 
+                        sender_username, 
+                        message_date_time,
+                        group_id
+                    FROM 
+                        database1.message
+                    WHERE 
+                        (group_id, message_date_time) IN (
+                            SELECT 
+                                group_id, MAX(message_date_time)
+                            FROM 
+                                database1.message
+                            GROUP BY 
+                                group_id
+                        )
+                ) m ON g.group_id = m.group_id
+            LEFT JOIN 
+                database1.user u ON m.sender_username = u.username
+            WHERE 
+                ug.username = :username;
+            """
+        
             parameter_dictionary = {
                 'username': username
             }
-            raw_tuple_output = query_db(f"SELECT group_id FROM database1.user_group WHERE username = :username;", parameter_dictionary=parameter_dictionary)
+            results = query_db(query, parameter_dictionary=parameter_dictionary)
+            group_info = []
+            print(results)
+            
+            for result in results:
+                if bool(result[2]) == 1: 
+                    any_messages = True
+                else:
+                    any_messages = False
+                    
+                group_info.append({
+                    "group_id": result[0],
+                    "group_name": result[1],
+                    "any_messages": any_messages,
+                    "last_message_user_display_name": result[3] if any_messages else None,
+                    "last_message": result[4] if any_messages else None,
+                    "last_message_datetime": result[5].strftime('%d/%m/%y') if any_messages else None
+                })
+            return group_info
+            """
+            parameter_dictionary = {
+                'username': username
+            }
+            # groupid, groupname, lastmessage, lastmessage_date, lastuser
+            #if query_db("SELECT COUNT(*) FROM database1.message WHERE group_id = %s;")
+            raw_tuple_output = query_db("SELECT group_id FROM database1.user_group WHERE username = :username;", parameter_dictionary=parameter_dictionary)
             groups = []
             for each_tuple in raw_tuple_output:
                 groups.append(each_tuple[0])
             return groups
+            """
         
         
     @staticmethod
@@ -340,6 +432,19 @@ class GroupTable:
             for each_tuple in result:
                 to_return.append(each_tuple[0])
             return to_return
+        
+    @staticmethod
+    def check_group_exists(group_id: int) -> bool:
+        """_summary_
+        Checks if group with group_id exists
+        
+        Args:
+            group_id (int): primary key field of group table
+        
+        Returns:
+            bool: True if group exists, False otherwise
+        """
+        return group_id in GroupTable.get_all_group_ids()
     
     
     # CREATE
@@ -621,7 +726,7 @@ class UserGroupTable:
         """
         if username in UserGroupTable.INVALID_FIELD_VALUES or group_id in UserGroupTable.INVALID_FIELD_VALUES:
             raise Exception("Error: A field value is empty.")
-        elif [username, group_id] not in UserGroupTable.get_all_user_group_ids():
+        elif UserTable.check_user_in_group(username, group_id) == False:
             raise Exception(f"Error: User '{username}' is not in group '{group_id}'.")
         else:
             parameter_dictionary = {
@@ -689,7 +794,7 @@ class MessageTable:
         elif group_id not in GroupTable.get_all_group_ids():
             raise Exception(f"Error: Group with group_id '{group_id}' does not exist.")
         
-        elif group_id not in UserTable.get_user_groups(sender_username):
+        elif UserTable.check_user_in_group(sender_username, group_id) == False:
             raise Exception(f"Error: User '{sender_username}' is not in group '{group_id}'.")
         
         else:
@@ -742,8 +847,7 @@ class MessageTable:
     
     
     @staticmethod
-    def update_message_content(message_id: int, new_message_content):
-        """"""
+    def update_message_content(message_id: int, new_message_content):        
         if message_id in MessageTable.INVALID_FIELD_VALUES or new_message_content in MessageTable.INVALID_FIELD_VALUES:
             raise Exception("Error: A field value is empty.")
         

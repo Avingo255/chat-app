@@ -156,18 +156,14 @@
                     scroll_to_bottom();
                 } else {
                     document.querySelector('.messages').innerHTML = messageListHTML;
-                }
-                
-
-                
+                }                
             }
         } catch (error) {
             console.error(error);
         }
-
         requestAnimationFrame(update_message_list);
     }
-
+    
     requestAnimationFrame(update_message_list);
 </script>
 {% endblock %}

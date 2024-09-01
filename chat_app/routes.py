@@ -24,13 +24,9 @@ def get_username():
 
 @app.route('/group-list', methods = ['POST']) 
 def group_list(): 
-    user_group_ids = UserTable.get_user_groups(current_user.username)
+    user_group_list = UserTable.get_user_groups(current_user.username)
     
-    group_name_list = []
-    for id in user_group_ids:
-        group_name_list.append(GroupTable.get_group_record_by_group_id(id)['group_name'])
-    
-    return make_response(jsonify(group_name_list), 200)
+    return make_response(jsonify(user_group_list), 200)
 
 
 @app.route('/group-messages', methods = ['POST'])
@@ -85,9 +81,9 @@ def index():
 def chat_window(group_id):
     #check group with group_id exists
     group_id = int(group_id)
-    if not GroupTable.get_group_record_by_group_id(group_id):
+    if GroupTable.check_group_exists(group_id) == False:
         abort(404)
-    elif group_id not in UserTable.get_user_groups(current_user.username):
+    elif UserTable.check_user_in_group(current_user.username, group_id) == False:
         abort(403)
     else:    
         group_display_name = GroupTable.get_group_record_by_group_id(group_id)['group_name']
@@ -150,6 +146,9 @@ def sign_up():
     
     return render_template('sign-up.html', title='Sign Up', form=form)
 
+@app.errorhandler(403)
+def not_found_error(error):
+    return render_template('403.html'), 403
 
 @app.errorhandler(404)
 def not_found_error(error):
