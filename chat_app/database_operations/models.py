@@ -444,7 +444,7 @@ class GroupTable:
     @staticmethod
     def get_all_group_messages(group_id: int) -> list:
         """_summary_ 
-        returns list of message records (as tuples) in a given group with group_id
+        returns list of message records (as tuples) in a given group with group_id ordered by message_date_time (oldest messages first)
         Args:
             group_id (int): primary key field of group table
             
@@ -463,7 +463,7 @@ class GroupTable:
             parameter_dictionary = {
                 'group_id': group_id
             }
-            raw_tuple_output = query_db(f"SELECT * FROM database1.message WHERE group_id = :group_id;", \
+            raw_tuple_output = query_db(f"SELECT * FROM database1.message WHERE group_id = :group_id ORDER BY message_date_time ASC;", \
                 parameter_dictionary=parameter_dictionary)
             messages = []
             for each_tuple in raw_tuple_output:

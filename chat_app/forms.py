@@ -7,7 +7,6 @@ from chat_app.database_operations.models import UserTable, GroupTable, UserGroup
 
 class SignInForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
-    email_address = StringField('Email Address', validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired()])
     remember_me = BooleanField('Remember Me')
     submit = SubmitField('Sign In')

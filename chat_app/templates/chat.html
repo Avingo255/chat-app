@@ -6,10 +6,169 @@
 
 {% block head %}
 {{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='chat_styles.css') }}">
 <script>
-    // Scroll to the bottom of the chat window
-    const messages = document.querySelector('.messages');
-    messages.scrollTop = messages.scrollHeight;
+    // get group id from URL for send message
+    const current_url = window.location.href;
+    const parts = current_url.split('/');
+    const group_id = parts.pop();
+    //console.log(`GROUP ID: ${group_id}`);
+    function scroll_to_bottom() {
+        const messages = document.querySelector('.messages');
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+    // once the page has loaded, otherwise the elements may not exist yet leading to -> TypeError: Cannot read property 'addEventListener' of null
+    document.addEventListener('DOMContentLoaded', function () {
+        // Scroll to the bottom of the chat window
+        scroll_to_bottom();
+
+        // Send message button
+        const input = document.querySelector('.send-message input');
+        
+        input.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                send_message();
+            }
+        });
+
+    });
+
+
+
+    async function getUsername() {
+        try {
+            const response = await fetch('/get-username');
+            const data = await response.json();
+            if (data.username) {
+                return data.username;
+            } else {
+                return "Not logged in";
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            return "Error fetching username";
+        }
+    }
+
+    async function send_message() {
+        const input = document.querySelector('.send-message input');
+
+        const user_msg = input.value;
+        input.value = "";
+        if (user_msg.trim() !== '') {
+            if (getUsername() === "Not logged in") {
+                alert("You must be signed in to send messages.");
+            } else {
+                try {
+                    const response = await fetch(`${window.origin}/send-message`, {
+                        method: "POST",
+                        credentials: "include",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            message_content: user_msg,
+                            sender_username: await getUsername(),
+                            group: group_id
+
+                        })
+                    });
+
+                    if (response.status !== 200) {
+                        console.log(`Looks like there was a problem. Status Code: ${response.status}`);
+                    }
+                    
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            }
+
+        } else {
+            alert("Please enter a message.");
+        }
+    }
+
+
+    async function update_message_list() {
+        try {
+            const response = await fetch(`${window.origin}/group-messages`, {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    group_id: group_id
+                })
+                
+            });
+
+            if (response.status !== 200) {
+                console.log(`Looks like there was a problem. Status Code: ${response.status}`);
+            } else {
+                const data = await response.json();
+                console.log(data);
+                
+                let messageListHTML = "";
+                let previousSender = "";
+                let previousDateTime = null;
+                
+                data.forEach(function (message) {
+                    console.log(message);
+                    let currentDateTime = new Date(message.message_date_time);
+                    let displayInfo = true;
+                
+                    if (message.sender_username === previousSender) {
+                        if (previousDateTime) {
+                            let timeDifference = (currentDateTime - previousDateTime) / (1000 * 60 * 60); // difference in hours
+                            if (timeDifference <= 1) {
+                                displayInfo = false;
+                            }
+                        }
+                    }
+                
+                    if (displayInfo) {
+                        messageListHTML += `
+                            <div class="message ${message.usertype}">
+                                <div class="message-info">
+                                    <div class="username">${message.sender_username}</div>
+                                    <div class="datetime">${message.message_date_time}</div>
+                                </div>
+                                <div class="text">${message.message_content}</div>
+                            </div>
+                        `;
+                    } else {
+                        messageListHTML += `
+                            <div class="message ${message.usertype}">
+                                <div class="text">${message.message_content}</div>
+                            </div>
+                        `;
+                    }
+                
+                    previousSender = message.sender_username;
+                    previousDateTime = currentDateTime;
+                });
+                if (messageListHTML === "") {
+                    messageListHTML = `<div class="placeholder-message">No messages yet.</div>`;
+                } else if (document.querySelector('.messages').innerHTML !== messageListHTML) {
+                    document.querySelector('.messages').innerHTML = messageListHTML;
+                    scroll_to_bottom();
+                } else {
+                    document.querySelector('.messages').innerHTML = messageListHTML;
+                }
+                
+
+                
+            }
+        } catch (error) {
+            console.error(error);
+        }
+
+        requestAnimationFrame(update_message_list);
+    }
+
+    requestAnimationFrame(update_message_list);
 </script>
 {% endblock %}
 
@@ -17,40 +176,28 @@
 {{ super() }}
 
 <div class="chat-window">
+    <div class="chat-window-navbar">
+        <div class="title">{{ group_display_name }}</div>
+        <div class="actions">
+            <a href="#">Action 1</a>
+            <a href="#">Action 2</a>
+        </div>
+    </div>
     <div class="messages">
-        <div class="message other-user">
+        <!-- E.g. 
+        <div class="message">
             <div class="message-info">
-                <div class="username">User1</div>
-                <div class="datetime">2024-08-30 15:48</div>
+                <div class="username">User 1</div>
+                <div class="datetime">2021-01-01 12:00:00</div>
             </div>
-            <div class="text">Hello!</div>
+            <div class="text">Hello, world!</div>
         </div>
-        <!-- Add more messages to demonstrate scrollbar -->
-        <div class="message other-user">
-            <div class="message-info">
-                <div class="username">User2</div>
-                <div class="datetime">2024-08-30 15:49</div>
-            </div>
-            <div class="text">Hi there!</div>
-        </div>
-        <div class="message other-user">
-            <div class="message-info">
-                <div class="username">User1</div>
-                <div class="datetime">2024-08-30 15:50</div>
-            </div>
-            <div class="text">How are you?</div>
-        </div>
-        <div class="message current-user">
-            <div class="message-info current-user-info">
-                <div class="username">You</div>
-                <div class="datetime">2024-08-30 15:51</div>
-            </div>
-            <div class="text">I'm good, thanks!</div>
-        </div>
+        -->
+        <div class="placeholder-message">Messages loading...</div>
     </div>
     <div class="send-message">
         <input type="text" placeholder="Type your message...">
-        <button>Send</button>
+        <button id="send-message-btn" onclick="send_message()">Send</button>
     </div>
 </div>
 

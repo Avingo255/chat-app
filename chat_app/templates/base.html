@@ -19,7 +19,11 @@
 
     <body>
         <div class="navbar">
-            <div class="title">Chat App</div>
+            {% if current_user.is_authenticated %}
+                <div class="title">{{ current_user.display_name }}'s chats</div>
+            {% else %}
+                <div class="title">Chat App</div>
+            {% endif %}
             <div class="sublinks">
                 <a href="{{ url_for('index') }}">Home</a>
 
@@ -27,6 +31,7 @@
                     <a href="{{ url_for('sign_out') }}">Sign Out</a>
                 {% else %}
                     <a href="{{ url_for('sign_in') }}">Sign In</a>
+                    <a href="{{ url_for('sign_up') }}">Sign Up</a>
                 {% endif %}
 
                 <a href="#">Link 4</a>

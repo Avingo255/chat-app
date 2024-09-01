@@ -1,9 +1,9 @@
-from chat_app import app, turbo
-from flask import render_template, flash, redirect, url_for, request, jsonify, make_response
+from chat_app import app
+from flask import render_template, flash, redirect, url_for, request, jsonify, make_response, abort
 from flask_login import current_user, login_user, logout_user, login_required
 from urllib.parse import urlsplit
 
-import threading, time
+from datetime import datetime
 
 from chat_app.database_operations.models import UserTable, GroupTable, UserGroupTable, MessageTable, InviteRequestTable
 from werkzeug.security import check_password_hash
@@ -11,35 +11,16 @@ from chat_app.auth import User
 
 from chat_app.forms import SignInForm, SignUpForm
 
+#
+# APIS
+#
 
-#LOGIN
-"""
-@app.context_processor
-def inject_group_record():
-    group_record = GroupTable.get_group_record_by_group_id(1)
-    return group_record
+@app.route('/get-username')
+def get_username():
+    if current_user.is_authenticated:
+        return jsonify(username=current_user.username)
+    return jsonify(username=None)
 
-def update_group_list():
-    with app.app_context():
-        while True:
-            time.sleep(1)
-            print('updating group list')
-            turbo.push(turbo.replace(render_template('group_list.html'), 'group_list'))
-            
-
-@app.route('/update')
-def update():
-    # Simulate some dynamic data
-    group_record = GroupTable.get_group_record_by_group_id(1)
-    return turbo.stream(turbo.append(render_template('group_list.html', group_record=group_record), target='dynamic-content'))
-
-
-"""
-@app.route('/')
-@app.route('/index')
-@login_required
-def index():
-    return render_template('index.html', title='Home')
 
 @app.route('/group-list', methods = ['POST']) 
 def group_list(): 
@@ -52,26 +33,66 @@ def group_list():
     return make_response(jsonify(group_name_list), 200)
 
 
-
 @app.route('/group-messages', methods = ['POST'])
 def group_messages():
-    group_id = request.args.get('group_id')
+    group_id = int(request.json['group_id'])
+    
     messages = GroupTable.get_all_group_messages(group_id)
-    return make_response(jsonify(messages), 200)
+    response = []
+    for message in messages:
+        if message[3] == current_user.username:
+            usertype = 'current-user'
+            sender_username = 'You'
+        else:
+            usertype = 'other-user'
+            sender_username = message[3]
+
+        
+        response.append({
+            'message_content': message[1],
+            'message_date_time': message[2].strftime('%d/%m/%y %H:%M:%S'),
+            'sender_username': sender_username,
+            'usertype': usertype
+        })
+        
+    return make_response(jsonify(response), 200)
+
+
+@app.route('/send-message', methods = ['POST'])
+def send_message():
+    message_content = request.json['message_content']
+    group_id = int(request.json['group'])
+    sender_username = request.json['sender_username']
+    
+    MessageTable.create_message(message_content, sender_username, group_id)
+    
+    return make_response(jsonify('MESSAGE SENT'), 200)
+
+
+# ROUTES
+
+@app.route('/')
+@app.route('/index')
+def index():
+    if current_user.is_authenticated:
+        return render_template('index.html', title=f'{current_user.display_name}\'s chats')
+    else:
+        return redirect(url_for('sign_in'))
 
 
 @app.route('/chat/<group_id>')
 @login_required
 def chat_window(group_id):
     #check group with group_id exists
+    group_id = int(group_id)
     if not GroupTable.get_group_record_by_group_id(group_id):
-        return redirect(url_for('index'))
+        abort(404)
     elif group_id not in UserTable.get_user_groups(current_user.username):
-        return redirect(url_for('index'))
+        abort(403)
     else:    
         group_display_name = GroupTable.get_group_record_by_group_id(group_id)['group_name']
     
-        return render_template('chat.html', group_display_name=group_display_name)
+        return render_template('chat.html', group_display_name=group_display_name, title=group_display_name)
 
 
 @app.route('/sign-in', methods=['GET', 'POST'])
@@ -111,7 +132,7 @@ def sign_in():
 def sign_out():
     UserTable.update_existing_user_field(current_user.username, 'is_authenticated', '0')
     logout_user()
-    return redirect(url_for('index'))
+    return redirect(url_for('sign_in'))
 
 
 @app.route('/sign-up', methods=['GET', 'POST'])
@@ -130,5 +151,10 @@ def sign_up():
     return render_template('sign-up.html', title='Sign Up', form=form)
 
 
+@app.errorhandler(404)
+def not_found_error(error):
+    return render_template('404.html'), 404
 
-
+@app.errorhandler(500)
+def internal_error(error):
+    return render_template('500.html'), 500
