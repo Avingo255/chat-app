@@ -88,7 +88,7 @@ def chat_window(group_id):
     else:    
         group_display_name = GroupTable.get_group_record_by_group_id(group_id)['group_name']
     
-        return render_template('chat.html', group_display_name=group_display_name, title=group_display_name)
+        return render_template('chat.html', group_display_name=group_display_name, group_id=str(group_id),  title=group_display_name)
 
 
 @app.route('/sign-in', methods=['GET', 'POST'])

@@ -242,7 +242,9 @@ class UserTable:
             LEFT JOIN 
                 database1.user u ON m.sender_username = u.username
             WHERE 
-                ug.username = :username;
+                ug.username = :username
+            ORDER BY
+                m.message_date_time DESC;
             """
         
             parameter_dictionary = {

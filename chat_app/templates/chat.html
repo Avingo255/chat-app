@@ -163,9 +163,16 @@
         }
         requestAnimationFrame(update_message_list);
     }
-    
+
     requestAnimationFrame(update_message_list);
 </script>
+{% endblock %}
+
+{% block dynamic_css %}
+{{ super() }}
+#group_{{ group_id }}.group  {
+    background-color: rgb(44,44,44);
+}
 {% endblock %}
 
 {% block content %}
@@ -189,7 +196,7 @@
             <div class="text">Hello, world!</div>
         </div>
         -->
-        <div class="placeholder-message">Messages loading...</div>
+        <div class="messages-loader"></div>
     </div>
     <div class="send-message">
         <input type="text" placeholder="Type your message...">
