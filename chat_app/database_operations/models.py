@@ -1,6 +1,8 @@
 from werkzeug.security import generate_password_hash
 from chat_app.database_operations.cloud_database import query_db #use this when running server
 #from cloud_database import query_db #use this when running this file on its own
+from time import perf_counter
+
 import datetime
 
 class UserTable:
@@ -204,45 +206,31 @@ class UserTable:
             raise Exception(f"Error: User '{username}' does not exist.")
         else:
             query = """
-            SELECT 
+with xx as ( select max(message_date_time) max_message_date_time,group_id from database1.message group by group_id) 
+SELECT 
                 g.group_id, 
                 g.group_name,
-                EXISTS(
-                    SELECT 1 
-                    FROM database1.message 
-                    WHERE group_id = g.group_id
-                    LIMIT 1
-                ) AS any_messages,
                 u.display_name AS last_message_user_display_name,
                 m.message_content AS last_message,
-                m.message_date_time AS last_message_datetime
+                m.message_date_time AS last_message_date_time,
+                m.sender_username AS last_message_sender_username,
+                u.username,       
+                count(m.message_id) over (partition by g.group_id) as message_count
             FROM 
-                database1.group g
-            JOIN 
-                database1.user_group ug ON g.group_id = ug.group_id
-            LEFT JOIN 
-                (
-                    SELECT 
-                        message_content, 
-                        sender_username, 
-                        message_date_time,
-                        group_id
-                    FROM 
-                        database1.message
-                    WHERE 
-                        (group_id, message_date_time) IN (
-                            SELECT 
-                                group_id, MAX(message_date_time)
-                            FROM 
-                                database1.message
-                            GROUP BY 
-                                group_id
-                        )
-                ) m ON g.group_id = m.group_id
-            LEFT JOIN 
-                database1.user u ON m.sender_username = u.username
-            WHERE 
-                ug.username = :username
+                database1.group g, 
+                database1.user_group ug,
+                database1.message m,
+                database1.user u,
+                xx
+            where     
+            1=1
+            and g.group_id = ug.group_id 
+            and ug.username = u.username
+            and g.group_id = m.group_id
+            and m.message_date_time = xx.max_message_date_time
+            and m.group_id = xx.group_id
+            and m.sender_username = u.username
+            and u.username = :username
             ORDER BY
                 m.message_date_time DESC;
             """
@@ -252,21 +240,16 @@ class UserTable:
             }
             results = query_db(query, parameter_dictionary=parameter_dictionary)
             group_info = []
-            print(results)
             
             for result in results:
-                if bool(result[2]) == 1: 
-                    any_messages = True
-                else:
-                    any_messages = False
-                    
+                                 
                 group_info.append({
                     "group_id": result[0],
                     "group_name": result[1],
-                    "any_messages": any_messages,
-                    "last_message_user_display_name": result[3] if any_messages else None,
-                    "last_message": result[4] if any_messages else None,
-                    "last_message_datetime": result[5].strftime('%d/%m/%y') if any_messages else None
+                    "message_count": result[7],
+                    "last_message_user_display_name": result[2] if result[7] != 0 else None,
+                    "last_message": result[3] if result[7] != 0 else None,
+                    "last_message_datetime": result[4].strftime('%d/%m/%y') if result[7] != 0 else None
                 })
             return group_info
             """
@@ -551,7 +534,9 @@ class GroupTable:
     @staticmethod
     def get_all_group_messages(group_id: int) -> list:
         """_summary_ 
-        returns list of message records (as tuples) in a given group with group_id ordered by message_date_time (oldest messages first)
+        returns message records (as tuples) in a given group with group_id ordered by message_date_time (oldest messages first)
+        tuple format: (messaage_id, message_content, message_date_time, sender_username, sender_display_name)
+        
         Args:
             group_id (int): primary key field of group table
             
@@ -560,7 +545,7 @@ class GroupTable:
             Exception: group with group_id does not exist
         
         Returns:
-            list: list of all message records in specified group with group_id
+            list: list of all message records in specified group with group_id, along with sender display name
         """
         if group_id in GroupTable.INVALID_FIELD_VALUES:
             raise Exception("Error: Group ID cannot be empty.")
@@ -570,12 +555,74 @@ class GroupTable:
             parameter_dictionary = {
                 'group_id': group_id
             }
-            raw_tuple_output = query_db(f"SELECT * FROM database1.message WHERE group_id = :group_id ORDER BY message_date_time ASC;", \
-                parameter_dictionary=parameter_dictionary)
+            query = """
+            SELECT
+                m.message_id,
+                m.message_content,
+                m.message_date_time,
+                m.sender_username,
+                u.display_name
+            FROM 
+                database1.message AS m
+            JOIN 
+                database1.user AS u 
+                ON m.sender_username = u.username
+            WHERE 
+                m.group_id = :group_id
+            ORDER BY 
+                m.message_date_time ASC;
+            """
+            #raw_tuple_output = query_db(f"SELECT * FROM database1.message WHERE group_id = :group_id ORDER BY message_date_time ASC;", parameter_dictionary=parameter_dictionary)
+            raw_tuple_output = query_db(query, parameter_dictionary=parameter_dictionary)
             messages = []
             for each_tuple in raw_tuple_output:
                 messages.append(each_tuple)
             return messages
+        
+    @staticmethod
+    def get_latest_group_message(group_id: int) -> tuple:
+        """_summary_
+        returns latest message record in a given group with group_id
+        tuple format: (message_id, message_content, message_date_time, sender_username, sender_display_name)
+        
+        Args:
+            group_id (int): primary key field of group table
+            
+        Raises:
+            Exception: group_id cannot be empty
+            Exception: group with group_id does not exist
+        
+        Returns:
+            tuple: latest message record in specified group with group_id, along with sender display name
+        """
+        if group_id in GroupTable.INVALID_FIELD_VALUES:
+            raise Exception("Error: Group ID cannot be empty.")
+        elif group_id not in GroupTable.get_all_group_ids():
+            raise Exception(f"Error: Group with '{group_id}' does not exist.")
+        else:
+            parameter_dictionary = {
+                'group_id': group_id
+            }
+            query = """
+            SELECT 
+                m.message_id,
+                m.message_content,
+                m.message_date_time,
+                m.sender_username,
+                u.display_name
+            FROM 
+                database1.message AS m
+            JOIN 
+                database1.user AS u 
+                ON m.sender_username = u.username
+            WHERE 
+                m.group_id = :group_id
+            ORDER BY 
+                m.message_date_time DESC
+            LIMIT 1;
+            """
+            raw_tuple_output = query_db(query, parameter_dictionary=parameter_dictionary)
+            return raw_tuple_output
     
     
     # UPDATE
@@ -1078,4 +1125,19 @@ class InviteRequestTable:
             return query_db(query, parameter_dictionary=parameter_dictionary, no_return=True)
         
 if __name__ == "__main__":
+    """
+    t1_start = perf_counter() 
+
+    hello = UserTable.get_user_groups('avinash255')
+    t1_stop = perf_counter()
+    print("Elapsed time:", t1_stop, t1_start) 
+
+
+    print("Elapsed time during the whole program in seconds:", t1_stop-t1_start)
+    print(hello)
+    """
     pass
+    
+    
+    
+    

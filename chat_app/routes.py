@@ -15,13 +15,6 @@ from chat_app.forms import SignInForm, SignUpForm
 # APIS
 #
 
-@app.route('/get-username')
-def get_username():
-    if current_user.is_authenticated:
-        return jsonify(username=current_user.username)
-    return jsonify(username=None)
-
-
 @app.route('/group-list', methods = ['POST']) 
 def group_list(): 
     user_group_list = UserTable.get_user_groups(current_user.username)
@@ -29,40 +22,72 @@ def group_list():
     return make_response(jsonify(user_group_list), 200)
 
 
-@app.route('/group-messages', methods = ['POST'])
-def group_messages():
+@app.route('/all-group-messages', methods = ['POST'])
+def all_group_messages():
     group_id = int(request.json['group_id'])
     
     messages = GroupTable.get_all_group_messages(group_id)
+    #tuple format: (message_id, message_content, message_date_time, sender_username, sender_display_name)
     response = []
     for message in messages:
         if message[3] == current_user.username:
             usertype = 'current-user'
-            sender_username = 'You'
+            sender_display_name = 'You'
         else:
             usertype = 'other-user'
-            sender_username = message[3]
+            sender_display_name = message[4]
 
         
         response.append({
+            'message_id': message[0],
             'message_content': message[1],
             'message_date_time': message[2].strftime('%d/%m/%y %H:%M:%S'),
-            'sender_username': sender_username,
+            'sender_username': message[3], 
+            'sender_display_name': sender_display_name,
             'usertype': usertype
         })
         
     return make_response(jsonify(response), 200)
 
 
+@app.route('/latest-group-message', methods = ['POST'])
+def latest_group_message():
+    group_id = int(request.json['group_id'])
+    
+    message = GroupTable.get_latest_group_message(group_id)[0]
+    #tuple format: (message_id, message_content, message_date_time, sender_username, sender_display_name)
+    
+    if message[3] == current_user.username:
+        usertype = 'current-user'
+        sender_display_name = 'You'
+    else:
+        usertype = 'other-user'
+        sender_display_name = message[4]
+    
+    response = {
+        'message_id': message[0],
+        'message_content': message[1],
+        'message_date_time': message[2].strftime('%d/%m/%y %H:%M:%S'),
+        'sender_username': message[3], 
+        'sender_display_name': sender_display_name,
+        'usertype': usertype
+    }
+    
+    return make_response(jsonify(response), 200)
+
+
 @app.route('/send-message', methods = ['POST'])
 def send_message():
-    message_content = request.json['message_content']
-    group_id = int(request.json['group'])
-    sender_username = request.json['sender_username']
-    
-    MessageTable.create_message(message_content, sender_username, group_id)
-    
-    return make_response(jsonify('MESSAGE SENT'), 200)
+    if current_user.is_authenticated == False:
+        return make_response(jsonify('UNAUTHENTICATED USER'), 401)
+    else:
+        message_content = request.json['message_content']
+        group_id = int(request.json['group'])
+        sender_username = current_user.username
+        
+        MessageTable.create_message(message_content, sender_username, group_id)
+        
+        return make_response(jsonify('MESSAGE SENT'), 200)
 
 
 # ROUTES
