@@ -89,8 +89,14 @@ def send_message():
         
         return make_response(jsonify('MESSAGE SENT'), 200)
 
-
-# ROUTES
+# ---------------------------------------------------------------------
+#                                                                     #                            
+#                                                                     #
+#                           ACTUAL WEBPAGE                            #
+#                               ROUTES                                #  
+#                                                                     #  
+#                                                                     #  
+# ---------------------------------------------------------------------
 
 @app.route('/')
 @app.route('/index')
@@ -123,26 +129,30 @@ def sign_in():
     form = SignInForm()
     
     if form.validate_on_submit():
-        user = UserTable.get_user_record_by_username(form.username.data)
-        if user and check_password_hash(user['password_hash'], form.password.data):
-            #2 conditions here:
-             #1. user exists in UserTable
-             #2. password is correct
-             
-            #login
-            user_obj = User(user['username'], user['display_name'], user['email_address'], user['datetime_joined'], \
-                user['password_hash'], user['is_authenticated'], user['is_active'], user['is_anonymous'])
-            UserTable.update_existing_user_field(user['username'], 'is_authenticated', '1')
-            login_user(user_obj, remember=form.remember_me.data)
-            
-            #redirect to the next page
-            next_page = request.args.get('next')
-            if next_page and urlsplit(next_page).netloc == '':
-                return redirect(next_page)
+        try:
+            user = UserTable.get_user_record_by_username(form.username.data)
+            if user and check_password_hash(user['password_hash'], form.password.data):
+                #2 conditions here:
+                #1. user exists in UserTable
+                #2. password is correct
+                
+                #login
+                user_obj = User(user['username'], user['display_name'], user['email_address'], user['datetime_joined'], \
+                    user['password_hash'], user['is_authenticated'], user['is_active'], user['is_anonymous'])
+                UserTable.update_existing_user_field(user['username'], 'is_authenticated', '1')
+                login_user(user_obj, remember=form.remember_me.data)
+                
+                #redirect to the next page
+                next_page = request.args.get('next')
+                if next_page and urlsplit(next_page).netloc == '':
+                    return redirect(next_page)
+                else:
+                    return redirect(url_for('index'))
             else:
-                return redirect(url_for('index'))
-        else:
-            #flash message if username or password is incorrect
+                #flash message if username or password is incorrect
+                flash('Invalid username or password')
+                return redirect(url_for('sign_in'))
+        except:
             flash('Invalid username or password')
             return redirect(url_for('sign_in'))
         
@@ -170,6 +180,15 @@ def sign_up():
         return redirect(url_for('sign_in'))
     
     return render_template('sign-up.html', title='Sign Up', form=form)
+
+@app.route('/about')
+def about():
+    return render_template('about.html', title="About",
+                           total_messages=MessageTable.get_number_of_messages(), 
+                           total_invitations=InviteRequestTable.get_number_of_invite_requests(), 
+                           total_groups=GroupTable.get_number_of_groups(), 
+                           total_users=UserTable.get_number_of_users())
+
 
 @app.errorhandler(403)
 def not_found_error(error):

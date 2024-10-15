@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block head %}
+<title>About Chat App</title>
+{% endblock %}
+
+{% block dynamic_css %}
+body {
+    overflow-y: auto;
+}
+
+.container {
+    height: auto;
+    overflow-y: auto;
+}
+
+.about-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+.about-header {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.about-header h1 {
+    font-size: 3rem;
+    margin-bottom: 10px;
+}
+
+.app-description {
+    text-align: center;
+    max-width: 800px;
+    margin: 0 auto 100px;
+    font-size: 1.2rem;
+    line-height: 1.6;
+    color: #b0b0b0;
+}
+
+.stats-container {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+}
+
+.stat-box {
+    background-color: #1f1f1f;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    flex: 1;
+    margin: 10px;
+    min-width: 200px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.stat-box h3 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+}
+
+.stat-box p {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #4CAF50;
+}
+
+.description {
+    background-color: #1f1f1f;
+    border-radius: 10px;
+    padding: 18px 30px 30px 30px;
+    margin-bottom: 80px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 80px;
+}
+
+.feature-card {
+    background-color: #1f1f1f;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.feature-card h3 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+}
+
+
+.feature-card p {
+    font-size: 1rem;
+}
+
+.cta-section {
+    text-align: center;
+    margin-top: 40px;
+}
+
+.cta-button {
+    display: inline-block;
+    background-color: #4CAF50;
+    color: white;
+    padding: 15px 30px;
+    font-size: 1.2rem;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+.cta-button:hover {
+    background-color: #45a049;
+}
+{% endblock %}
+
+{% block content %}
+<div class="about-container">
+    <div class="about-header">
+        <h1>About Chat App</h1>
+    </div>
+
+    <div class="app-description">
+        <p>Welcome to Chat App, where conversations come to life! Imagine a digital realm where distance disappears, ideas flow freely, and connections are forged in real-time. Our app isn't just another messaging platform; it's a vibrant ecosystem of human interaction, powered by cutting-edge technology and designed with your needs in mind. Whether you're brainstorming with colleagues, planning adventures with friends, or staying in touch with loved ones across the globe, Chat App is your gateway to seamless, engaging, and secure communication. Get ready to experience the future of digital dialogue!</p>
+    </div>
+
+    <div class="stats-container">
+        <div class="stat-box">
+            <h3>Total Messages</h3>
+            <p>{{ total_messages }}</p>
+        </div>
+        <div class="stat-box">
+            <h3>Group Invitations</h3>
+            <p>{{ total_invitations }}</p>
+        </div>
+        <div class="stat-box">
+            <h3>Groups Created</h3>
+            <p>{{ total_groups }}</p>
+        </div>
+        <div class="stat-box">
+            <h3>Total Users</h3>
+            <p>{{ total_users }}</p>
+        </div>
+    </div>
+
+    <div class="description">
+        <h2>Our Mission</h2>
+        <p>At Chat App, our mission is to break down communication barriers and bring people together in a digital space that feels as natural and engaging as face-to-face conversation. We believe that meaningful connections are the cornerstone of personal and professional growth, and we're committed to providing a platform that nurtures these connections. Through innovative features, robust security measures, and an intuitive user experience, we aim to make every interaction on Chat App valuable, enjoyable, and memorable.</p>
+    </div>
+
+    <h2 id="featureh2">Key Features</h2>
+    <div class="features">
+        <div class="feature-card">
+            <h3>Real-time Messaging</h3>
+            <p>Experience the thrill of instant communication with our lightning-fast messaging system. Watch your thoughts materialize on screen in real-time, keeping conversations fluid and dynamic.</p>
+        </div>
+        <div class="feature-card">
+            <h3>Group Chats</h3>
+            <p>Bring your team, family, or friend circle together in one virtual space. Our group chats support seamless collaboration, idea sharing, and social interaction, making every group conversation a delight.</p>
+        </div>
+        <div class="feature-card">
+            <h3>File Sharing</h3>
+            <p>Share your world effortlessly. From important documents to cherished photos and videos, our robust file-sharing feature ensures that your media and files are transmitted securely and swiftly.</p>
+        </div>
+        <div class="feature-card">
+            <h3>End-to-End Encryption</h3>
+            <p>Your privacy is our utmost priority. With state-of-the-art end-to-end encryption, your conversations remain yours alone. Communicate with peace of mind, knowing your data is protected from prying eyes.</p>
+        </div>
+    </div>
+
+    <div class="cta-section">
+        <h2>Ready to revolutionize your communication?</h2>
+        <a href="{{ url_for('sign_up') }}" class="cta-button">Join Chat App Today</a>
+    </div>
+</div>
+{% endblock %}

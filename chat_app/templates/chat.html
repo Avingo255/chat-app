@@ -154,6 +154,8 @@
         requestAnimationFrame(update_message_list);
     }
 
+    //THIS MADE NO NOTICEABLE PERFORMANCE IMPROVEMENT:
+    /*
     async function latest_group_message() {
         try {
             const response = await fetch(`${window.origin}/latest-group-message`, {
@@ -195,9 +197,9 @@
             console.error(error);
         }
 
-        requestAnimationFrame(latest_group_message);
+        //setInterval(latest_group_message, 1000);
 
-    }
+    }*/
 
 </script>
 {% endblock %}

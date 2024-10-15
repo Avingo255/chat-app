@@ -18,10 +18,10 @@
                 throw new Error(`Looks like there was a problem: ${response.status}`);
             }
             const data = await response.json();
-            console.log(data);
+            console.log(`Response ${data}`);
             let groupListHTML = "";
             data.forEach(function (group) {
-                //console.log(group);
+                console.log(group);
                 if (group.any_messages == false) {
                     groupListHTML += `
                     <a href="${window.origin}/chat/${group.group_id}" id="group_${group.group_id}" class="group">
@@ -56,9 +56,11 @@
         } catch (error) {
             console.error(error);
         }
-        requestAnimationFrame(update_group_list);
+        //requestAnimationFrame(update_group_list);
     }
-    requestAnimationFrame(update_group_list);
+    setInterval(update_group_list, 1000);
+    
+    
 </script>
 {% endblock %}
 

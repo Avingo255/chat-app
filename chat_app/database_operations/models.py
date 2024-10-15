@@ -21,6 +21,12 @@ class UserTable:
                 to_return.append(each_tuple[0])
             return to_return
         
+    @staticmethod
+    def get_number_of_users() -> int:
+        """Returns number of users in user table"""
+        result = query_db("SELECT COUNT(username) FROM user;")
+        return result[0][0]
+        
         
     @staticmethod
     def validate_password(raw_password: str) -> list:        
@@ -206,33 +212,50 @@ class UserTable:
             raise Exception(f"Error: User '{username}' does not exist.")
         else:
             query = """
-with xx as ( select max(message_date_time) max_message_date_time,group_id from database1.message group by group_id) 
-SELECT 
-                g.group_id, 
-                g.group_name,
-                u.display_name AS last_message_user_display_name,
-                m.message_content AS last_message,
-                m.message_date_time AS last_message_date_time,
-                m.sender_username AS last_message_sender_username,
-                u.username,       
-                count(m.message_id) over (partition by g.group_id) as message_count
+            WITH recent_messages AS (
+                SELECT 
+                    m.group_id,
+                    m.message_content,
+                    m.sender_username,
+                    m.message_date_time,
+                    ROW_NUMBER() OVER (PARTITION BY m.group_id ORDER BY m.message_date_time DESC) AS rn
+                FROM 
+                    database1.message m
+            ),
+            group_message_status AS (
+                SELECT 
+                    g.group_id,
+                    g.group_name,
+                    u.username,
+                    COALESCE(rm.message_content, '') AS last_message_content,
+                    COALESCE(rm.message_date_time, NULL) AS last_message_date_time,
+                    COALESCE(ud.display_name, '') AS last_message_user_display_name,
+                    CASE WHEN COUNT(m.message_id) OVER (PARTITION BY g.group_id) > 0 THEN TRUE ELSE FALSE END AS any_messages
+                FROM 
+                    database1.group g
+                JOIN 
+                    database1.user_group ug ON g.group_id = ug.group_id
+                JOIN 
+                    database1.user u ON ug.username = u.username
+                LEFT JOIN 
+                    recent_messages rm ON g.group_id = rm.group_id AND rm.rn = 1
+                LEFT JOIN 
+                    database1.user ud ON rm.sender_username = ud.username
+                LEFT JOIN 
+                    database1.message m ON g.group_id = m.group_id
+                WHERE 
+                    u.username = :username
+            )
+            SELECT DISTINCT
+                group_id,
+                group_name,
+                any_messages,
+                last_message_user_display_name,
+                last_message_content,
+                last_message_date_time
             FROM 
-                database1.group g, 
-                database1.user_group ug,
-                database1.message m,
-                database1.user u,
-                xx
-            where     
-            1=1
-            and g.group_id = ug.group_id 
-            and ug.username = u.username
-            and g.group_id = m.group_id
-            and m.message_date_time = xx.max_message_date_time
-            and m.group_id = xx.group_id
-            and m.sender_username = u.username
-            and u.username = :username
-            ORDER BY
-                m.message_date_time DESC;
+                group_message_status;
+
             """
         
             parameter_dictionary = {
@@ -246,24 +269,12 @@ SELECT
                 group_info.append({
                     "group_id": result[0],
                     "group_name": result[1],
-                    "message_count": result[7],
-                    "last_message_user_display_name": result[2] if result[7] != 0 else None,
-                    "last_message": result[3] if result[7] != 0 else None,
-                    "last_message_datetime": result[4].strftime('%d/%m/%y') if result[7] != 0 else None
+                    "any_messages": result[2],
+                    "last_message_user_display_name": result[3] if result[2] != 0 else None,
+                    "last_message": result[4] if result[2] != 0 else None,
+                    "last_message_datetime": result[5].strftime('%d/%m/%y') if result[2] != 0 else None
                 })
             return group_info
-            """
-            parameter_dictionary = {
-                'username': username
-            }
-            # groupid, groupname, lastmessage, lastmessage_date, lastuser
-            #if query_db("SELECT COUNT(*) FROM database1.message WHERE group_id = %s;")
-            raw_tuple_output = query_db("SELECT group_id FROM database1.user_group WHERE username = :username;", parameter_dictionary=parameter_dictionary)
-            groups = []
-            for each_tuple in raw_tuple_output:
-                groups.append(each_tuple[0])
-            return groups
-            """
         
         
     @staticmethod
@@ -417,6 +428,12 @@ class GroupTable:
             for each_tuple in result:
                 to_return.append(each_tuple[0])
             return to_return
+        
+    @staticmethod
+    def get_number_of_groups() -> int:
+        """Returns number of groups in group table"""
+        result = query_db("SELECT COUNT(group_id) FROM database1.group;")
+        return result[0][0]
         
     @staticmethod
     def check_group_exists(group_id: int) -> bool:
@@ -811,6 +828,16 @@ class MessageTable:
             return all_message_ids
     
     @staticmethod
+    def get_number_of_messages() -> int:
+        """_summary_
+        Returns number of messages in message table
+        Returns:
+            int: number of messages in message table
+        """
+        result = query_db("SELECT COUNT(message_id) FROM database1.message;")
+        return result[0][0]
+    
+    @staticmethod
     def create_message(message_content: str, sender_username: str, group_id: int) -> None:
         """_summary_
         Creates a message in the message table - calling context must specify message_content, sender_username, and group_id
@@ -941,6 +968,17 @@ class MessageTable:
 
 class InviteRequestTable:
     INVALID_FIELD_VALUES = [None, '']
+    
+    @staticmethod
+    def get_number_of_invite_requests() -> int:
+        """_summary_
+        Returns number of invite requests in invite_request table
+        
+        Returns:
+            int: number of invite requests in invite_request table
+        """
+        result = query_db("SELECT COUNT(request_id) FROM database1.invite_request;")
+        return result[0][0]
     
     @staticmethod
     def check_invite_request_id_not_in_use(request_id: int) -> bool:
@@ -1125,19 +1163,6 @@ class InviteRequestTable:
             return query_db(query, parameter_dictionary=parameter_dictionary, no_return=True)
         
 if __name__ == "__main__":
-    """
-    t1_start = perf_counter() 
-
-    hello = UserTable.get_user_groups('avinash255')
-    t1_stop = perf_counter()
-    print("Elapsed time:", t1_stop, t1_start) 
-
-
-    print("Elapsed time during the whole program in seconds:", t1_stop-t1_start)
-    print(hello)
-    """
     pass
     
-    
-    
-    
+        

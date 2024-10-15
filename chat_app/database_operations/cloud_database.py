@@ -1,18 +1,25 @@
 import sqlalchemy as sa
 
-connection_string = "mysql+pymysql://avinash:M%40cr03c0n0m1c5@chatapp-database-mysql-server.mysql.database.azure.com:3306/database1"
+# AZURE DATABASE
+#connection_string = "mysql+pymysql://avinash:M%40cr03c0n0m1c5@chat-app-database-mysql-server.mysql.database.azure.com:3306/database1"
+
+
+# LOCAL DATABASE
+connection_string = "mysql+pymysql://root:c%40tFISH0@localhost:3306/database1"
+
 
 engine = sa.create_engine(connection_string, echo=True, isolation_level="SERIALIZABLE")
 
 def query_db(query_string: str, parameter_dictionary: dict = None, no_return: bool = False):
-    #noreturn argument exists as .fetchall() is needed for some queries
-    #but not for others, and .fetchall will throw an error if no rows are returned
-    #this argument is used to handle that case
-    #parameter_dictionary is used with sqlalchemy text function's parameter binding
-    # to protect against SQL injection
-    
     """_summary_
     This function is used to execute SQL queries on the database
+    
+    no_return argument exists as query engine's .fetchall() is needed for some queries
+    but not for others, and .fetchall will throw an error if no rows are returned
+    this argument is used to handle that case
+
+    parameter_dictionary is used with sqlalchemy text function's parameter binding
+    to protect against SQL injection
     
     Args:
         query_string (str): the SQL query to be executed
@@ -20,8 +27,8 @@ def query_db(query_string: str, parameter_dictionary: dict = None, no_return: bo
         no_return (bool, optional): if the sql query is written to return rows, specify True. Defaults to False.
     
     Returns:
-        list: if not_return is set to True, the function will return a list of rows (as tuples) returned by the query
-        None: if no_return is set to False, the function will return None
+        list: if no_return is set to True, the function will return None
+        None: if no_return is set to False, the function will return a list of rows (as tuples) returned by the query
     """
     
     if parameter_dictionary == None:
@@ -48,3 +55,8 @@ def query_db(query_string: str, parameter_dictionary: dict = None, no_return: bo
                 connection.commit()  
                 
             return result.fetchall()
+        
+if __name__ == "__main__":
+    
+    #print(query_db("SHOW databases;"))
+    pass

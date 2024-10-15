@@ -105,6 +105,6 @@ def setup_database():
     create_user_group_table()
     create_message_table()
     create_invite_request_table()
-    #create_delete_group_with_no_users_trigger()
+    create_delete_group_with_no_users_trigger()
 
 setup_database()
