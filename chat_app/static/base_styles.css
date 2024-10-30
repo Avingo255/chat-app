@@ -2,6 +2,10 @@ html, :root {
     color-scheme: dark;
 }
 
+::selection {
+    background-color: #545454b0;
+}
+
 body {
     margin: 0;
     font-family: 'Roboto', sans-serif;

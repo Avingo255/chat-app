@@ -1,7 +1,6 @@
 from werkzeug.security import generate_password_hash
 from chat_app.database_operations.cloud_database import query_db #use this when running server
 #from cloud_database import query_db #use this when running this file on its own
-from time import perf_counter
 
 import datetime
 
@@ -981,6 +980,34 @@ class InviteRequestTable:
         return result[0][0]
     
     @staticmethod
+    def get_number_received_invite_requests(receiver_username: str) -> int:
+        """_summary_
+        Get number of invite requests a user has received
+        Args:
+            receiver_username (str): the user who is receiving the invite requests
+
+        Raises:
+            Exception: receiver_username is empty
+            Exception: receiver_username not in User Table (does not exist)
+
+        Returns:
+            int: number of invite requests specified user has received
+        """
+        
+        if receiver_username in InviteRequestTable.INVALID_FIELD_VALUES:
+            raise Exception("Error: A field value is empty.")
+        
+        elif receiver_username not in UserTable.get_all_usernames():
+            raise Exception(f"Error: User '{receiver_username}' does not exist.")
+        else:
+            parameter_dictionary = {
+            'receiver_username': receiver_username
+            }        
+            query = "SELECT COUNT(*) FROM database1.invite_request WHERE receiver_username = :receiver_username"
+            return query_db(query, parameter_dictionary=parameter_dictionary)[0][0] 
+        
+    
+    @staticmethod
     def check_invite_request_id_not_in_use(request_id: int) -> bool:
         """_summary_
         Checks if invite_request_id is not in use
@@ -995,6 +1022,7 @@ class InviteRequestTable:
             'request_id': request_id
         }
         query = "SELECT COUNT(*) FROM database1.invite_request WHERE request_id = :request_id;"
+        
         return query_db(query, parameter_dictionary=parameter_dictionary)[0][0] == 0
     
     
@@ -1027,6 +1055,9 @@ class InviteRequestTable:
         
         elif sender_username not in UserTable.get_all_usernames():
             raise Exception(f"Error: User '{sender_username}' does not exist.")
+        
+        elif UserTable.check_user_in_group(sender_username, group_id) == False:
+            raise Exception(f"User {sender_username} not in group with group_id {group_id}. User must be in the group to invite others to it. ")            
         
         elif group_id not in GroupTable.get_all_group_ids():
             raise Exception(f"Error: Group '{group_id}' does not exist.")
@@ -1069,6 +1100,7 @@ class InviteRequestTable:
         
         elif InviteRequestTable.check_invite_request_id_not_in_use(request_id):
             raise Exception(f"Error: Request with request_id '{request_id}' does not exist.")
+        
         else:
             parameter_dictionary = {
                 'request_id': request_id
@@ -1084,6 +1116,102 @@ class InviteRequestTable:
                 'status': raw_tuple_output[4]
             }
             return dictionary_output
+        
+    def get_received_invite_requests(receiver_username: str) -> list:
+        
+        """Gets list of received invite requests (as dictionaries) for a specific user.
+
+        Args:
+            receiver_username (str): The user who is receiving these invite requests
+
+        Raises:
+            Exception: receiver_username is empty
+            Exception: receiver username does not exist (not in user table)
+
+        Returns:
+            list: list of dictionaries {sender_username, group_name, status, request_date_time}
+        """        
+        if receiver_username in InviteRequestTable.INVALID_FIELD_VALUES:
+            raise Exception("Error: A field value is empty.")
+        elif receiver_username not in UserTable.get_all_usernames():
+            raise Exception(f"Error: User '{receiver_username}' does not exist.")
+        else:
+            parameter_dictionary = {
+            'receiver_username': receiver_username
+            }        
+            query = """SELECT sender_username, group_name, status, request_date_time, request_id
+                    FROM database1.invite_request, database1.group 
+                    WHERE database1.invite_request.receiver_username = :receiver_username 
+                    AND database1.group.group_id = database1.invite_request.group_id
+                    ORDER BY
+                        CASE
+                            WHEN status = 'pending' THEN 1
+                            ELSE 2
+                        END,
+                        request_date_time DESC;"""
+            results =  query_db(query, parameter_dictionary=parameter_dictionary)
+            
+            invite_requests = []
+            
+            for result in results:
+                                 
+                invite_requests.append({
+                    "sender_username": result[0],
+                    "group_name": result[1],
+                    "status": result[2],
+                    "request_date_time": result[3],
+                    "request_id": result[4],
+                    
+                })
+            return invite_requests 
+        
+    
+    def get_sent_invite_requests(sender_username: str) -> list:
+        """Gets list of sent invite requests (as dictionaries) for a specific user.
+
+        Args:
+            sender_username (str): User who has sent these invite requests.
+
+        Raises:
+            Exception: sender_username is empty
+            Exception: user with sender_username does not exist (not in user table)
+
+        Returns:
+            list: list of dictionaries of invite requests (receiver_username, group_name, status, request_date_time)
+        """
+        if sender_username in InviteRequestTable.INVALID_FIELD_VALUES:
+            raise Exception("Error: A field value is empty.")
+        elif sender_username not in UserTable.get_all_usernames():
+            raise Exception(f"Error: User '{sender_username}' does not exist.")
+        else:
+            parameter_dictionary = {
+            'sender_username': sender_username
+            }        
+            query = """SELECT receiver_username, group_name, status, request_date_time, request_id
+                    FROM database1.invite_request, database1.group 
+                    WHERE database1.invite_request.sender_username = :sender_username 
+                    AND database1.group.group_id = database1.invite_request.group_id
+                    ORDER BY
+                        CASE
+                            WHEN status = 'pending' THEN 1
+                            ELSE 2
+                        END,
+                        request_date_time DESC;"""
+            results =  query_db(query, parameter_dictionary=parameter_dictionary)
+            
+            invite_requests = []
+            
+            for result in results:
+                                 
+                invite_requests.append({
+                    "receiver_username": result[0],
+                    "group_name": result[1],
+                    "status": result[2],
+                    "request_date_time": result[3],
+                    "request_id": result[4],
+                    
+                })
+            return invite_requests
         
         
     # UPDATE
@@ -1163,6 +1291,14 @@ class InviteRequestTable:
             return query_db(query, parameter_dictionary=parameter_dictionary, no_return=True)
         
 if __name__ == "__main__":
-    pass
+    """
+    GroupTable.create_group("Group 8")
+    GroupTable.create_group("Group 9")
+    UserGroupTable.create_user_group("avingo255", 8)
+    UserGroupTable.create_user_group("avingo255", 9)
+    InviteRequestTable.create_invite_request("avinash255", "avingo255", 8, "pending")
+    InviteRequestTable.create_invite_request("avinash255", "avingo255", 9, "pending")
+    """
     
-        
+    pass
+         

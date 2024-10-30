@@ -68,6 +68,7 @@ def create_invite_request_table():
         sender_username VARCHAR(50) NOT NULL,
         group_id INT NOT NULL,
         status VARCHAR(50) NOT NULL,
+        request_date_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT invite_request_receiver_username_fk FOREIGN KEY (receiver_username) REFERENCES database1.user(username) ON UPDATE CASCADE ON DELETE CASCADE,
         CONSTRAINT invite_request_sender_username_fk FOREIGN KEY (sender_username) REFERENCES database1.user(username) ON UPDATE CASCADE ON DELETE CASCADE,
         CONSTRAINT invite_request_group_id_fk FOREIGN KEY (group_id) REFERENCES database1.group(group_id) ON UPDATE CASCADE ON DELETE CASCADE

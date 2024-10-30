@@ -16,64 +16,73 @@ from chat_app.forms import SignInForm, SignUpForm
 #
 
 @app.route('/group-list', methods = ['POST']) 
-def group_list(): 
-    user_group_list = UserTable.get_user_groups(current_user.username)
-    
-    return make_response(jsonify(user_group_list), 200)
+def group_list():
+    if current_user.is_authenticated == False:
+        return make_response(jsonify('UNAUTHENTICATED USER'), 401)
+    else:
+        user_group_list = UserTable.get_user_groups(current_user.username)
+        
+        return make_response(jsonify(user_group_list), 200)
 
 
 @app.route('/all-group-messages', methods = ['POST'])
 def all_group_messages():
-    group_id = int(request.json['group_id'])
-    
-    messages = GroupTable.get_all_group_messages(group_id)
-    #tuple format: (message_id, message_content, message_date_time, sender_username, sender_display_name)
-    response = []
-    for message in messages:
+    if current_user.is_authenticated == False:
+        return make_response(jsonify('UNAUTHENTICATED USER'), 401)
+    else:
+        group_id = int(request.json['group_id'])
+        
+        messages = GroupTable.get_all_group_messages(group_id)
+        #tuple format: (message_id, message_content, message_date_time, sender_username, sender_display_name)
+        response = []
+        for message in messages:
+            if message[3] == current_user.username:
+                usertype = 'current-user'
+                sender_display_name = 'You'
+            else:
+                usertype = 'other-user'
+                sender_display_name = message[4]
+
+            
+            response.append({
+                'message_id': message[0],
+                'message_content': message[1],
+                'message_date_time': message[2].strftime('%d/%m/%y %H:%M:%S'),
+                'sender_username': message[3], 
+                'sender_display_name': sender_display_name,
+                'usertype': usertype
+            })
+            
+        return make_response(jsonify(response), 200)
+
+
+@app.route('/latest-group-message', methods = ['POST'])
+def latest_group_message():
+    if current_user.is_authenticated == False:
+        return make_response(jsonify('UNAUTHENTICATED USER'), 401)
+    else:
+        group_id = int(request.json['group_id'])
+        
+        message = GroupTable.get_latest_group_message(group_id)[0]
+        #tuple format: (message_id, message_content, message_date_time, sender_username, sender_display_name)
+        
         if message[3] == current_user.username:
             usertype = 'current-user'
             sender_display_name = 'You'
         else:
             usertype = 'other-user'
             sender_display_name = message[4]
-
         
-        response.append({
+        response = {
             'message_id': message[0],
             'message_content': message[1],
             'message_date_time': message[2].strftime('%d/%m/%y %H:%M:%S'),
             'sender_username': message[3], 
             'sender_display_name': sender_display_name,
             'usertype': usertype
-        })
+        }
         
-    return make_response(jsonify(response), 200)
-
-
-@app.route('/latest-group-message', methods = ['POST'])
-def latest_group_message():
-    group_id = int(request.json['group_id'])
-    
-    message = GroupTable.get_latest_group_message(group_id)[0]
-    #tuple format: (message_id, message_content, message_date_time, sender_username, sender_display_name)
-    
-    if message[3] == current_user.username:
-        usertype = 'current-user'
-        sender_display_name = 'You'
-    else:
-        usertype = 'other-user'
-        sender_display_name = message[4]
-    
-    response = {
-        'message_id': message[0],
-        'message_content': message[1],
-        'message_date_time': message[2].strftime('%d/%m/%y %H:%M:%S'),
-        'sender_username': message[3], 
-        'sender_display_name': sender_display_name,
-        'usertype': usertype
-    }
-    
-    return make_response(jsonify(response), 200)
+        return make_response(jsonify(response), 200)
 
 
 @app.route('/send-message', methods = ['POST'])
@@ -88,6 +97,90 @@ def send_message():
         MessageTable.create_message(message_content, sender_username, group_id)
         
         return make_response(jsonify('MESSAGE SENT'), 200)
+    
+    
+    
+@app.route('/all-received-group-invites', methods = ['POST'])
+def all_received_group_invites():
+    if current_user.is_authenticated == False:
+        return make_response(jsonify('UNAUTHENTICATED USER'), 401)
+    else:
+        all_received_group_invites = InviteRequestTable.get_received_invite_requests(current_user.username)
+        #list of dictionaries {sender_username, group_name, status, request_date_time, request_id}
+        response = []
+        for invite in all_received_group_invites:
+            response.append({
+                'sender_username': invite['sender_username'],
+                'group_name': invite['group_name'],
+                #'request_date_time': invite['request_date_time'].strftime('%d/%m/%y'),
+                'request_date_time': invite['request_date_time'].strftime('%d/%m/%y %H:%M:%S'), # with h:m:s time as well
+                'status': invite['status'],
+                'request_id': invite['request_id'], 
+            })
+        
+        return make_response(jsonify(response), 200)
+
+@app.route('/all-sent-group-invites', methods = ['POST'])
+def all_sent_group_invites():
+    if current_user.is_authenticated == False:
+        return make_response(jsonify('UNAUTHENTICATED USER'), 401)
+    else:
+        all_received_group_invites = InviteRequestTable.get_sent_invite_requests(current_user.username)
+        #list of dictionaries {receiver_username, group_name, status, request_date_time, request_id}
+        
+        response = []
+        for invite in all_received_group_invites:
+            response.append({
+                'receiver_username': invite['receiver_username'],
+                'group_name': invite['group_name'],
+                'request_date_time': invite['request_date_time'].strftime('%d/%m/%y %H:%M:%S'),
+                'status': invite['status'],
+                'request_id': invite['request_id'],  
+            })
+        
+        return make_response(jsonify(response), 200)
+
+@app.route('/accept-invite', methods = ['POST'])
+def accept_invite():
+    if current_user.is_authenticated == False:
+        return make_response(jsonify('UNAUTHENTICATED USER'), 401)
+    else:
+        request_id = request.json['request_id']
+        
+        #update status
+        InviteRequestTable.update_invite_request_status(request_id, "accepted")
+        
+        #add user to group
+        group_id = InviteRequestTable.get_invite_request_record_by_request_id(request_id)['group_id']
+        UserGroupTable.create_user_group(current_user.username, group_id)
+        return make_response(jsonify('INVITE REQUEST ACCEPTED'), 200)
+
+
+@app.route('/reject-invite', methods = ['POST'])
+def reject_invite():
+    if current_user.is_authenticated == False:
+        return make_response(jsonify('UNAUTHENTICATED USER'), 401)
+    else:
+        request_id = request.json['request_id']
+        
+        #update status
+        InviteRequestTable.update_invite_request_status(request_id, "rejected")
+        
+        return make_response(jsonify('INVITE REQUEST REJECTED'), 200)
+
+
+@app.route('/cancel-outgoing-invite', methods = ['POST'])
+def cancel_outgoing_invite():
+    if current_user.is_authenticated == False:
+        return make_response(jsonify('UNAUTHENTICATED USER'), 401)
+    else:
+        request_id = request.json['request_id']
+        
+        #update status
+        InviteRequestTable.delete_invite_request(request_id)
+        
+        return make_response(jsonify('INVITE REQUEST CANCELLED'), 200)
+
 
 # ---------------------------------------------------------------------
 #                                                                     #                            
@@ -120,6 +213,14 @@ def chat_window(group_id):
         group_display_name = GroupTable.get_group_record_by_group_id(group_id)['group_name']
     
         return render_template('chat.html', group_display_name=group_display_name, group_id=str(group_id),  title=group_display_name)
+    
+@app.route('/group-invites')
+@login_required
+def group_invites():
+    subtitle = "Manage group invites here."
+    if InviteRequestTable.get_number_received_invite_requests(current_user.username) == 0:
+        subtitle = "Feeling lonely?"
+    return render_template('invites.html', title="Group Invites", subtitle=subtitle)
 
 
 @app.route('/sign-in', methods=['GET', 'POST'])

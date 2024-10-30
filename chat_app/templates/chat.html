@@ -143,10 +143,11 @@
 
                 if (document.querySelector('.messages').innerHTML !== messageListHTML) {
                     document.querySelector('.messages').innerHTML = messageListHTML;
-                    scroll_to_bottom();
-                } else {
+                    await scroll_to_bottom();
+                } 
+                /*else {
                     document.querySelector('.messages').innerHTML = messageListHTML;
-                }
+                }*/
             }
         } catch (error) {
             console.error(error);
@@ -232,7 +233,7 @@ background-color: rgb(44,44,44);
             <div class="text">Hello, world!</div>
         </div>
         -->
-        <div class="messages-loader"></div>
+        <div class="loader"></div>
     </div>
     <div class="send-message">
         <input type="text" placeholder="Type your message...">

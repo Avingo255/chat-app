@@ -32,6 +32,7 @@
             <div class="sublinks">
                 <a href="{{ url_for('about')}}">About</a>
                 <a href="{{ url_for('index') }}">Chats</a>
+                <a href="{{ url_for('group_invites') }}">Group Invites</a>
 
                 {% if current_user.is_authenticated %} 
                     <a href="{{ url_for('sign_out') }}">Sign Out</a>

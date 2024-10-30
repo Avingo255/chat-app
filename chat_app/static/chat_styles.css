@@ -185,7 +185,7 @@ body {
     font-size: 17px;
 }
 
-.messages-loader {
+.loader {
     position: absolute;
     top: 48%;
     right: 35%;
