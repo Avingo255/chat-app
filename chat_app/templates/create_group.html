@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+
+{% block head %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='auth_styles.css') }}">
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const bubbleBox = document.getElementById('bubbleBox') || createBubbleBox();
+            const bubbleInput = document.getElementById('bubbleInput');
+            const addBubbleButton = document.getElementById('addBubble');
+            const hiddenBubbleList = document.getElementById('hiddenBubbleList');
+            const groupNameInput = document.getElementById('group_name');
+        
+            function createBubbleBox() {
+                const box = document.createElement('div');
+                box.id = 'bubbleBox';
+                box.className = 'bubble-box';
+                document.querySelector('.bubble-list-container').prepend(box);
+                return box;
+            }
+        
+            function addBubble(value) {
+                const bubble = document.createElement('span');
+                bubble.className = 'bubble';
+                bubble.textContent = value;
+                bubble.addEventListener('click', function() {
+                    bubbleBox.removeChild(bubble);
+                    updateHiddenField();
+                });
+                bubbleBox.appendChild(bubble);
+                updateHiddenField();
+            }
+        
+            function updateHiddenField() {
+                const bubbles = Array.from(bubbleBox.getElementsByClassName('bubble'));
+                hiddenBubbleList.value = bubbles.map(b => b.textContent).join(',');
+            }
+        
+            function handleAddBubble() {
+                const value = bubbleInput.value.trim();
+                if (value) {
+                    addBubble(value);
+                    bubbleInput.value = '';
+                }
+            }
+        
+            // Event listener for the Enter button
+            addBubbleButton.addEventListener('click', function(e) {
+                e.preventDefault(); // Prevent form submission
+                handleAddBubble();
+            });
+        
+            // Event listener for the Enter key in the input field
+            bubbleInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault(); // Prevent form submission
+                    handleAddBubble();
+                }
+            });
+        
+            // Validate group name length
+            groupNameInput.addEventListener('input', function() {
+                if (this.value.length > 50) {
+                    this.value = this.value.slice(0, 50);
+                }
+            });
+        });
+    </script>
+{% endblock %}
+
+{% block content %}
+    <div class="auth-text">
+        <h2>Create Group</h2>
+        <div class="caption">No friends?</div>
+    </div>
+ 
+    <div class="form-contents">
+        <h1>Bubble List Component</h1>
+        <form method="POST">
+            {{ form.csrf_token }}
+            
+            <div class="bubble-list-container">
+                <div id="bubbleBox" class="bubble-box"></div>
+                <div class="input-container">
+                    <input type="text" id="bubbleInput" placeholder="Enter a value">
+                    <button type="button" id="addBubble">Enter</button>
+                </div>
+            </div>
+            <div class="form-group">
+                {{ form.group_name.label }}
+                {{ form.group_name(class="form-control", maxlength="50") }}
+            </div>
+            {{ form.bubble_list(id="hiddenBubbleList", style="display: none;") }}
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+    
+{% endblock %}

@@ -9,7 +9,15 @@ from chat_app.database_operations.models import UserTable, GroupTable, UserGroup
 from werkzeug.security import check_password_hash
 from chat_app.auth import User
 
-from chat_app.forms import SignInForm, SignUpForm
+from chat_app.forms import SignInForm, SignUpForm, BubbleForm
+
+#validation function that returns True if string only has alphanumeric characters or spaces, false otherwise
+def is_alphanumeric_or_space(string):
+    for char in string:
+        if not char.isalnum() and not char.isspace():
+            return False
+    return True
+
 
 #
 # APIS
@@ -221,6 +229,54 @@ def group_invites():
     if InviteRequestTable.get_number_received_invite_requests(current_user.username) == 0:
         subtitle = "Feeling lonely?"
     return render_template('invites.html', title="Group Invites", subtitle=subtitle)
+
+@app.route('/create-group', methods=['GET', 'POST'])
+def create_group():
+    if current_user.is_authenticated == False:
+        return redirect(url_for('sign_in'))
+    else:
+        form = BubbleForm()
+        if form.validate_on_submit():
+            bubble_list = form.bubble_list.data
+            group_name = form.group_name.data
+            
+            
+            # 1. check usernames are valid
+            invalid_usernames = []
+            for username in bubble_list:
+                if not username.isalnum() or username not in UserTable.get_all_usernames():
+                    invalid_usernames.append(username)
+            
+            if len(invalid_usernames) > 0:
+                print(invalid_usernames)
+                flash(f"Invalid usernames: {invalid_usernames}")
+                return render_template('create_group.html', form=form)
+            elif len(bubble_list) == 0:
+                flash("Please add at least one user to the group")
+                return render_template('create_group.html', form=form)
+            
+            elif not is_alphanumeric_or_space(group_name):
+                flash("Invalid group name - only use alphanumeric characters")
+                return render_template('create_group.html', form=form)
+            else:
+                GroupTable.create_group(group_name)
+                group_id = GroupTable.get_last_group_id()
+                UserGroupTable.create_user_group(current_user.username, group_id)
+                
+                for username in bubble_list:
+                    InviteRequestTable.create_invite_request(username, current_user.username, group_id, 'pending')
+                return redirect(url_for('chat_window', group_id=group_id))
+                
+            
+            # 2. if not valid, flash message
+            # 3. add element to let users add group name
+            # 4. create group (add current user automatically, send invite requests to other users)
+            # 5. redirect to group chat
+            # 6. add notice in chat if only one person in group???????
+        return render_template('create_group.html', form=form)
+    
+    
+    return render_template('create_group.html', title='Create Group')
 
 
 @app.route('/sign-in', methods=['GET', 'POST'])

@@ -447,6 +447,18 @@ class GroupTable:
         """
         return group_id in GroupTable.get_all_group_ids()
     
+    @staticmethod
+    def get_last_group_id():
+        """_summary_
+        Returns the last group_id that was created
+        
+        Returns:
+            int: last group_id that was created
+        """
+        result = query_db("SELECT MAX(group_id) FROM database1.group;")
+        
+        return result[0][0]
+    
     
     # CREATE
     @staticmethod
@@ -1299,6 +1311,4 @@ if __name__ == "__main__":
     InviteRequestTable.create_invite_request("avinash255", "avingo255", 8, "pending")
     InviteRequestTable.create_invite_request("avinash255", "avingo255", 9, "pending")
     """
-    
     pass
-         
