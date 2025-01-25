@@ -39,3 +39,65 @@ body {
     display: flex;
     height: calc(100vh - 64px); /* Adjust height based on navbar size */
 }
+
+
+.popup-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.popup {
+  background-color: #1f1f1f;
+  color: #ffffff;
+  padding: 15px;
+  width: 300px;
+  border: 1px solid #444;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transform: translateY(calc(100% + 20px));
+  transition: transform 0.3s ease-out;
+  text-decoration: underline;
+  text-decoration-color: red;
+  text-decoration-style: double;
+}
+
+.popup-toggle {
+  display: none;
+}
+
+.popup-toggle:checked + .popup {
+  transform: translateY(0);
+  display: none;
+
+}
+
+.close-button {
+  position: absolute;
+  top: 5px;
+  right: 10px;
+  cursor: pointer;
+  font-size: 16px;
+  color: #999;
+}
+
+.close-button:hover {
+  color: #fff;
+}
+
+.popup p {
+  margin: 0;
+  padding-right: 20px;
+}
+
+/* Auto-show popup */
+.popup-toggle:not(:checked) + .popup {
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+@keyframes slideIn {
+  to {
+    transform: translateY(0);
+  }
+}
+

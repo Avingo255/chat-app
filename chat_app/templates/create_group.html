@@ -1,24 +1,15 @@
 {% extends "base.html" %}
 
-
 {% block head %}
     {{ super() }}
-    <link rel="stylesheet" href="{{ url_for('static', filename='auth_styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='create_group_styles.css') }}">
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const bubbleBox = document.getElementById('bubbleBox') || createBubbleBox();
+            const bubbleBox = document.getElementById('bubbleBox');
             const bubbleInput = document.getElementById('bubbleInput');
             const addBubbleButton = document.getElementById('addBubble');
             const hiddenBubbleList = document.getElementById('hiddenBubbleList');
             const groupNameInput = document.getElementById('group_name');
-        
-            function createBubbleBox() {
-                const box = document.createElement('div');
-                box.id = 'bubbleBox';
-                box.className = 'bubble-box';
-                document.querySelector('.bubble-list-container').prepend(box);
-                return box;
-            }
         
             function addBubble(value) {
                 const bubble = document.createElement('span');
@@ -45,21 +36,18 @@
                 }
             }
         
-            // Event listener for the Enter button
             addBubbleButton.addEventListener('click', function(e) {
-                e.preventDefault(); // Prevent form submission
+                e.preventDefault();
                 handleAddBubble();
             });
         
-            // Event listener for the Enter key in the input field
             bubbleInput.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') {
-                    e.preventDefault(); // Prevent form submission
+                    e.preventDefault();
                     handleAddBubble();
                 }
             });
         
-            // Validate group name length
             groupNameInput.addEventListener('input', function() {
                 if (this.value.length > 50) {
                     this.value = this.value.slice(0, 50);
@@ -70,30 +58,37 @@
 {% endblock %}
 
 {% block content %}
-    <div class="auth-text">
-        <h2>Create Group</h2>
-        <div class="caption">No friends?</div>
-    </div>
- 
-    <div class="form-contents">
-        <h1>Bubble List Component</h1>
-        <form method="POST">
-            {{ form.csrf_token }}
-            
-            <div class="bubble-list-container">
-                <div id="bubbleBox" class="bubble-box"></div>
-                <div class="input-container">
-                    <input type="text" id="bubbleInput" placeholder="Enter a value">
-                    <button type="button" id="addBubble">Enter</button>
-                </div>
+    <div class="container">
+        <div class="auth-text">
+            <h2>Create Group</h2>
+            <div class="caption">No friends?</div>
+        </div>
+     
+        <div class="form-contents">
+            <div class="form-content-inner">
+                <h1>It's worth a try...</h1>
+                <h2 class="subheading">Invites to join will be sent to users you add below. You can check the status of these invites in Group Invites -> Outgoing Invitations. <br><br> <i>There is no guarantee anyone will accept.</i></h2>
+                <form method="POST">
+                    {{ form.csrf_token }}
+                    
+                    <div class="form-group">
+                        <label for="{{ form.group_name.id }}" class="form-label">{{ form.group_name.label.text }}</label>
+                        {{ form.group_name(class="form-control", maxlength="50", placeholder="No silly names please") }}
+                    </div>
+
+                    <div class="bubble-list-container">
+                        <div id="bubbleBox" class="bubble-box"></div>
+                        <div class="input-container">
+                            <input type="text" id="bubbleInput" placeholder="Enter the username of a user to invite here...    (input will be added above)">
+                            <button type="button" id="addBubble">Add</button>
+                        </div>
+                    </div>
+                    
+                    {{ form.bubble_list(id="hiddenBubbleList", style="display: none;") }}
+                    <button type="submit" class="submit-btn">Create Group</button>
+                </form>
             </div>
-            <div class="form-group">
-                {{ form.group_name.label }}
-                {{ form.group_name(class="form-control", maxlength="50") }}
-            </div>
-            {{ form.bubble_list(id="hiddenBubbleList", style="display: none;") }}
-            <button type="submit">Submit</button>
-        </form>
+        </div>
     </div>
-    
 {% endblock %}
+
