@@ -219,8 +219,10 @@ def chat_window(group_id):
         abort(403)
     else:    
         group_display_name = GroupTable.get_group_record_by_group_id(group_id)['group_name']
+        number_online_users = GroupTable.get_number_of_online_users(group_id)
+        number_users = GroupTable.get_number_of_users(group_id)
     
-        return render_template('chat.html', group_display_name=group_display_name, group_id=str(group_id),  title=group_display_name)
+        return render_template('chat.html', group_display_name=group_display_name, group_id=str(group_id),  title=group_display_name, number_online_users=number_online_users, number_users=number_users)
     
 @app.route('/group-invites')
 @login_required

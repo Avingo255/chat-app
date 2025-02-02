@@ -185,7 +185,23 @@ class UserTable:
         elif group_id not in GroupTable.get_all_group_ids():
             raise Exception(f"Error: Group '{group_id}' does not exist.")
         else:
-            return [username, group_id] in UserGroupTable.get_all_user_group_ids()
+            query = """
+            SELECT COUNT(*) 
+            FROM 
+                database1.user_group, 
+                database1.user, 
+                database1.group 
+            WHERE user.username = :username
+            AND group.group_id = :group_id
+            AND user_group.username = user.username
+            AND user_group.group_id = group.group_id;
+            """
+            parameter_dictionary = {
+                'username': username,
+                'group_id': group_id
+            }
+            result = query_db(query, parameter_dictionary=parameter_dictionary)
+            return result[0][0] == 1
     
     
     @staticmethod
@@ -296,11 +312,31 @@ class UserTable:
         elif username not in UserTable.get_all_usernames():
             raise Exception(f"Error: User '{username}' does not exist.")
         else:
+            query = """
+            SELECT 
+                invite_request.request_id,
+                invite_request.receiver_username,
+                invite_request.sender_username,
+                invite_request.group_id,
+                invite_request.status,
+                invite_request.request_date_time
+                
+            FROM
+                database1.invite_request, database1.user
+            WHERE
+                receiver_username = :username
+                AND status = 'pending'
+                AND invite_request.receiver_username = user.username
+                AND user.username = :username;
+            """
+            
+            
             parameter_dictionary = {
                 'username': username
             }
-            raw_tuple_output = query_db("SELECT * FROM database1.invite_request WHERE receiver_username = :username \
-                AND status = 'pending';", parameter_dictionary=parameter_dictionary)
+            #raw_tuple_output = query_db("SELECT * FROM database1.invite_request,  WHERE invite_request.receiver_username = :username \
+             #   AND status = 'pending';", parameter_dictionary=parameter_dictionary)
+            raw_tuple_output = query_db(query, parameter_dictionary=parameter_dictionary)
             requests = []
             for each_tuple in raw_tuple_output:
                 requests.append(each_tuple)
@@ -515,7 +551,7 @@ class GroupTable:
                 'group_id': group_id
             }
             
-            raw_tuple_output = query_db(f"SELECT * FROM database1.group WHERE group_id = :group_id;", \
+            raw_tuple_output = query_db("SELECT * FROM database1.group WHERE group_id = :group_id;", \
                 parameter_dictionary=parameter_dictionary)[0]
             
             dictionary_output = {
@@ -525,6 +561,42 @@ class GroupTable:
             }
             return dictionary_output
     
+    @staticmethod
+    def get_number_of_users(group_id: int) -> int:
+        """Returns number of users in a given group"""
+        if group_id in GroupTable.INVALID_FIELD_VALUES:
+            raise Exception("Error: Group ID cannot be empty.")
+        elif group_id not in GroupTable.get_all_group_ids():
+            raise Exception(f"Error: Group with '{group_id}' does not exist.")
+        else:
+            parameter_dictionary = {
+            'group_id': group_id
+            }
+            result = query_db("SELECT COUNT(username) FROM database1.user_group, database1.group WHERE user_group.group_id = :group_id AND group.group_id = user_group.group_id;", parameter_dictionary=parameter_dictionary)
+            return result[0][0]
+        
+    @staticmethod
+    def get_number_of_online_users(group_id: int) -> int:
+        """Returns number of online users in a given group"""
+        if group_id in GroupTable.INVALID_FIELD_VALUES:
+            raise Exception("Error: Group ID cannot be empty.")
+        elif group_id not in GroupTable.get_all_group_ids():
+            raise Exception(f"Error: Group with '{group_id}' does not exist.")
+        else:
+            parameter_dictionary = {
+            'group_id': group_id
+            }
+            query = """
+            SELECT COUNT(user_group.username) 
+            FROM database1.user_group, database1.user, database1.group
+            WHERE group.group_id = :group_id
+            AND user_group.group_id = group.group_id
+            AND user.username = user_group.username
+            AND user.is_authenticated = 1;
+            """
+            result = query_db(query, parameter_dictionary=parameter_dictionary)
+            return result[0][0]
+        
     
     @staticmethod
     def get_group_users(group_id: int) -> list:
@@ -551,7 +623,7 @@ class GroupTable:
             parameter_dictionary = {
                 'group_id': group_id
             }
-            raw_tuple_output = query_db(f"SELECT username FROM database1.user_group WHERE group_id = :group_id;", \
+            raw_tuple_output = query_db("SELECT user_group.username FROM database1.user_group, database1.group WHERE user_group.group_id = :group_id AND user_group.group_id = group.group_id;", \
                 parameter_dictionary=parameter_dictionary)
             users = []
             for each_tuple in raw_tuple_output:
@@ -906,11 +978,11 @@ class MessageTable:
             message_id (int): primary key field of message table
 
         Raises:
-            Exception: message_id cannot be empty\n
+            Exception: message_id cannot be empty
             Exception: a message with message_id does not exist
 
         Returns:
-            dictionary: of message_id, message_content, message_date_time, sender_username, group_id
+            dictionary_output (dict): of message_id, message_content, message_date_time, sender_username, group_id
         """
         if message_id in MessageTable.INVALID_FIELD_VALUES:
             raise Exception("Error: Message ID cannot be empty.")
@@ -1303,12 +1375,10 @@ class InviteRequestTable:
             return query_db(query, parameter_dictionary=parameter_dictionary, no_return=True)
         
 if __name__ == "__main__":
-    """
-    GroupTable.create_group("Group 8")
-    GroupTable.create_group("Group 9")
-    UserGroupTable.create_user_group("avingo255", 8)
-    UserGroupTable.create_user_group("avingo255", 9)
-    InviteRequestTable.create_invite_request("avinash255", "avingo255", 8, "pending")
-    InviteRequestTable.create_invite_request("avinash255", "avingo255", 9, "pending")
-    """
+    #print(UserTable.check_user_in_group("avinash255", 7))
+    #print(GroupTable.get_number_of_users(5))
+    #print(GroupTable.get_number_of_online_users(5))
+    
+    #print(UserTable.get_pending_invite_requests("avingo255"))
     pass
+    
