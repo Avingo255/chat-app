@@ -23,6 +23,17 @@ def is_alphanumeric_or_space(string):
 # APIS
 #
 
+#route to get number of online users in a group
+@app.route('/number-online-users', methods = ['POST'])
+def number_online_users():
+    if current_user.is_authenticated == False:
+        return make_response(jsonify('UNAUTHENTICATED USER'), 401)
+    else: 
+        group_id = int(request.json['group_id'])
+        number_online_users = GroupTable.get_number_of_online_users(group_id)
+        print(f"Number of online users in group {group_id}: {number_online_users}")
+        return make_response(jsonify(number_online_users), 200)
+
 @app.route('/group-list', methods = ['POST']) 
 def group_list():
     if current_user.is_authenticated == False:

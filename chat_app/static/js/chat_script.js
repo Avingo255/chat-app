@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // After update_message_list completes, start latest_group_message loop
     requestAnimationFrame(update_message_list);
+    requestAnimationFrame(update_number_online_users);
 });
 
 async function send_message() {
@@ -72,6 +73,34 @@ async function send_message() {
     } else {
         alert("Please enter a message.");
     }
+}
+
+async function update_number_online_users() {
+    try {
+        const response = await fetch(`${window.origin}/number-online-users`, {
+            method: "POST",
+            credentials: "include",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                group_id: group_id
+            })
+        });
+
+        if (response.status !== 200) {
+            console.log(`Looks like there was a problem. Status Code: ${response.status}`);
+        } else {
+            
+            const data = await response.json();
+            console.log(data);
+            document.querySelector('.number-online-users').textContent = `Online Users: ${data}`;
+        }
+    }
+    catch (error) {
+        console.error(error);
+    }
+    requestAnimationFrame(update_number_online_users);
 }
 
 async function update_message_list() {
