@@ -1,7 +1,11 @@
 {% extends "base.html" %}
 
+{% block head %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/error_styles.css') }}">
+{% endblock %}
+
 {% block content %}
     <h1>403 Forbidden</h1>
-    <p>Sorry, you don't have permission to access this page.</p>
-    <p><a href="{{ url_for('index') }}">Back</a></p>
+    <p>Sorry, you don't have permission to access this page. <a href="{{ url_for('index') }}">Back</a></p>
 {% endblock %}
