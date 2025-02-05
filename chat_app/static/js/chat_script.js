@@ -1,14 +1,16 @@
-const current_url = window.location.href;
-const parts = current_url.split('/');
-const group_id = parts.pop();
+// chat_group_id is a global variable that stores the group id of the chat group the user is currently in.
+// it is created in get_group_id.js
+
 
 async function scroll_to_bottom() {
+    // used in update_message_list to scroll to the bottom of the chat messages
+    // important
     const messages = document.querySelector('.messages');
     messages.scrollTop = messages.scrollHeight;
 }
 
 document.addEventListener('DOMContentLoaded', async function () {
-
+    await update_chat_options_link();
 
     const input = document.querySelector('.send-message input');
 
@@ -33,18 +35,7 @@ async function send_message() {
     const input = document.querySelector('.send-message input');
     const user_msg = input.value;
     input.value = "";
-    /*const messageListHTML = `
-                    <div class="message current-user" data-id="null">
-                        <div class="message-info">
-                            <div class="username">Avinash</div>
-                            <div class="datetime">???</div>
-                        </div>
-                        <div class="text">${user_msg}</div>
-                    </div>
-                `;
 
-    document.querySelector('.messages').innerHTML += messageListHTML;
-    await scroll_to_bottom();*/
     if (user_msg.trim() !== '') {
         try {
             const response = await fetch(`${window.origin}/send-message`, {
@@ -55,53 +46,21 @@ async function send_message() {
                 },
                 body: JSON.stringify({
                     message_content: user_msg,
-                    group: group_id
+                    group: chat_group_id
                 })
             });
-
-
             if (response.status !== 200) {
                 console.log(`Looks like there was a problem. Status Code: ${response.status}`);
             }
-
-
-
         } catch (error) {
             console.error('Error:', error);
         }
-
     } else {
         alert("Please enter a message.");
     }
 }
 
-async function update_number_online_users() {
-    try {
-        const response = await fetch(`${window.origin}/number-online-users`, {
-            method: "POST",
-            credentials: "include",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                group_id: group_id
-            })
-        });
 
-        if (response.status !== 200) {
-            console.log(`Looks like there was a problem. Status Code: ${response.status}`);
-        } else {
-            
-            const data = await response.json();
-            console.log(data);
-            document.querySelector('.number-online-users').textContent = `Online Users: ${data}`;
-        }
-    }
-    catch (error) {
-        console.error(error);
-    }
-    requestAnimationFrame(update_number_online_users);
-}
 
 async function update_message_list() {
     try {
@@ -112,7 +71,7 @@ async function update_message_list() {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                group_id: group_id
+                group_id: chat_group_id
             })
         });
 
@@ -174,49 +133,12 @@ async function update_message_list() {
     requestAnimationFrame(update_message_list);
 }
 
-//THIS MADE NO NOTICEABLE PERFORMANCE IMPROVEMENT:
-/*
-async function latest_group_message() {
-    try {
-        const response = await fetch(`${window.origin}/latest-group-message`, {
-            method: "POST",
-            credentials: "include",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                group_id: group_id
-            })
-        });
-
-        if (response.status !== 200) {
-            throw new Error(`Looks like there was a problem. Status Code: ${response.status}`);
-        }
-        const data = await response.json();
-        //const lastMessageId = document.querySelector('.messages:last-child').dataset.id;
-        const lastMessageId = document.querySelector('.messages').lastElementChild.dataset.id;
-        //console.log(lastMessageId);
-        //console.log(data.message_id);
-        //console.log(data.message_id != lastMessageId);
-        if (data.message_id != lastMessageId) {
-            const messageListHTML = `
-                    <div class="message ${data.usertype}" data-id="${data.message_id}">
-                        <div class="message-info">
-                            <div class="username">${data.sender_display_name}</div>
-                            <div class="datetime">${data.message_date_time}</div>
-                        </div>
-                        <div class="text">${data.message_content}</div>
-                    </div>
-                `;
-
-            document.querySelector('.messages').innerHTML += messageListHTML;
-            await scroll_to_bottom();
-        }
-
-    } catch (error) {
-        console.error(error);
+// write function to update a link chat-options-link to the groupid in the url ie window.origin/chat/groupid. the chat options link should be in the form window.origin/chat/groupid/options
+async function update_chat_options_link() {
+    const chatOptionsLink = document.querySelector('.chat-options-link');
+    if (chatOptionsLink) {
+        chatOptionsLink.href = `${window.origin}/chat/${chat_group_id}/options`;
+    } else {
+        console.error('Chat options link element not found');
     }
-
-    //setInterval(latest_group_message, 1000);
-
-}*/
+}

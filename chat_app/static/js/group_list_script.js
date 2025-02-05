@@ -9,7 +9,7 @@ async function update_group_list() {
         });
 
         if (response.status !== 200) {
-            throw new Error(`Looks like there was a problem: ${response.status}`);
+            console.error(`Looks like there was a problem: ${response.status}`);
         }
         const data = await response.json();
         console.log(`Response ${data}`);
@@ -50,7 +50,8 @@ async function update_group_list() {
     } catch (error) {
         console.error(error);
     }
-    //requestAnimationFrame(update_group_list);
+    requestAnimationFrame(update_group_list);
 }
-setInterval(update_group_list, 1000);
+
+requestAnimationFrame(update_group_list);
 

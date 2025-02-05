@@ -629,6 +629,76 @@ class GroupTable:
             for each_tuple in raw_tuple_output:
                 users.append(each_tuple[0])
             return users
+        
+    def get_group_user_details(group_id: int) -> dict:
+        """_summary_
+        Returns dictionary of username, user display name, is_authenticated for every user in the group
+
+        Args:
+            group_id (int): primary key field of group table
+
+        Raises:
+            Exception: group_id cannot be empty
+            Exception: group with group_id does not exist
+
+        Returns:
+            dict: dictionary of username, user display name, is_authenticated for every user in the group
+        """
+        if group_id in GroupTable.INVALID_FIELD_VALUES:
+            raise Exception("Error: Group ID cannot be empty.")
+        elif group_id not in GroupTable.get_all_group_ids():
+            raise Exception(f"Error: Group with '{group_id}' does not exist.")
+        else:
+            parameter_dictionary = {
+                'group_id': group_id
+            }
+            query = """
+            SELECT 
+                u.username, 
+                u.display_name, 
+                u.is_authenticated 
+            FROM 
+                database1.user_group ug
+            JOIN 
+                database1.user u 
+                ON ug.username = u.username
+            WHERE 
+                ug.group_id = :group_id;
+            """
+            results = query_db(query, parameter_dictionary=parameter_dictionary)
+            user_details = []
+            for result in results:
+                user_details.append({
+                    "username": result[0],
+                    "display_name": result[1],
+                    "is_authenticated": result[2]
+                })
+            return user_details
+    
+    def get_group_datetime_created(group_id: int) -> str:
+        """_summary_
+        Returns the datetime_created for a given group_id
+        
+        Args:
+            group_id (int): primary key field of group table
+        
+        Raises:
+            Exception: group_id cannot be empty
+            Exception: group with group_id does not exist
+        
+        Returns:
+            datetime: datetime_created of the group
+        """
+        if group_id in GroupTable.INVALID_FIELD_VALUES:
+            raise Exception("Error: Group ID cannot be empty.")
+        elif group_id not in GroupTable.get_all_group_ids():
+            raise Exception(f"Error: Group with '{group_id}' does not exist.")
+        else:
+            parameter_dictionary = {
+                'group_id': group_id
+            }
+            result = query_db("SELECT datetime_created FROM database1.group WHERE group_id = :group_id;", parameter_dictionary=parameter_dictionary)
+            return result[0][0].strftime('%d/%m/%y %H:%M:%S')
     
     
     @staticmethod
@@ -1380,5 +1450,5 @@ if __name__ == "__main__":
     #print(GroupTable.get_number_of_online_users(5))
     
     #print(UserTable.get_pending_invite_requests("avingo255"))
+    #print(GroupTable.get_group_user_details(5))
     pass
-    

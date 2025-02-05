@@ -8,6 +8,10 @@
 {{ super() }}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/chat_styles.css') }}">
 <script src="{{ url_for('static', filename='js/chat_script.js') }}"></script>
+<script src="{{ url_for('static', filename='js/update_user_counts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/get_group_id.js') }}"></script>
+
+
 {% endblock %}
 
 {% block dynamic_css %}
@@ -21,14 +25,28 @@ background-color: rgb(44,44,44);
 {{ super() }}
 
 <div class="chat-window">
-    <div class="chat-window-navbar">
+    <!--<div class="chat-window-navbar">
         <div class="title">{{ group_display_name }}</div>
         <div class="actions">
-            <a class="number-online-users">Online Users: {{ number_online_users }}</a><!--Now updated live.-->
+            <a class="number-online-users">Online Users: {{ number_online_users }}</a><!-Now updated live.->
             <a>Total Users: {{ number_users }}</a>
-            <a href="#">Settings</a>
+            <a class="chat-options-link" href="#">Options</a>
+        
+        </div>
+    </div>-->
+    <div class="chat-window-navbar">
+        <div class="title-container">
+            <div class="title">{{ group_display_name }}</div>
+            <div class="group-stats">
+                <span class="online-users">ONLINE: {{ number_online_users }}</span>
+                <span class="total-users">MEMBERS: {{ number_users }}</span>
+            </div>
+        </div>
+        <div class="actions">
+            <a class="chat-options-link" href="#">Options</a>
         </div>
     </div>
+    
     <div class="messages">
         <!-- E.g. 
         <div class="message">
@@ -45,6 +63,8 @@ background-color: rgb(44,44,44);
         <input type="text" placeholder="Type your message...">
         <button id="send-message-btn" onclick="send_message()">Send</button>
     </div>
+    
+    
 </div>
 
 {% endblock %}

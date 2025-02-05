@@ -31,8 +31,17 @@ def number_online_users():
     else: 
         group_id = int(request.json['group_id'])
         number_online_users = GroupTable.get_number_of_online_users(group_id)
-        print(f"Number of online users in group {group_id}: {number_online_users}")
         return make_response(jsonify(number_online_users), 200)
+
+#route to get number of total users in a group
+@app.route('/number-total-users', methods = ['POST'])
+def number_total_users():
+    if current_user.is_authenticated == False:
+        return make_response(jsonify('UNAUTHENTICATED USER'), 401)
+    else: 
+        group_id = int(request.json['group_id'])
+        number_total_users = GroupTable.get_number_of_users(group_id)
+        return make_response(jsonify(number_total_users), 200)
 
 @app.route('/group-list', methods = ['POST']) 
 def group_list():
@@ -42,6 +51,17 @@ def group_list():
         user_group_list = UserTable.get_user_groups(current_user.username)
         
         return make_response(jsonify(user_group_list), 200)
+    
+@app.route('/group-user-details', methods = ['POST'])
+def group_user_details():
+    if current_user.is_authenticated == False:
+        return make_response(jsonify('UNAUTHENTICATED USER'), 401)
+    else:
+        group_id = int(request.json['group_id'])
+        user_list = GroupTable.get_group_user_details(group_id)
+        #list of dictionaries {username, display_name, is_authenticated}
+        
+        return make_response(jsonify(user_list), 200)
 
 
 @app.route('/all-group-messages', methods = ['POST'])
@@ -201,14 +221,14 @@ def cancel_outgoing_invite():
         return make_response(jsonify('INVITE REQUEST CANCELLED'), 200)
 
 
-# ---------------------------------------------------------------------
+# ------------------------------------------------------------------- #
 #                                                                     #                            
 #                                                                     #
 #                           ACTUAL WEBPAGE                            #
 #                               ROUTES                                #  
 #                                                                     #  
 #                                                                     #  
-# ---------------------------------------------------------------------
+# ------------------------------------------------------------------- #
 
 @app.route('/')
 @app.route('/index')
@@ -235,6 +255,22 @@ def chat_window(group_id):
     
         return render_template('chat.html', group_display_name=group_display_name, group_id=str(group_id),  title=group_display_name, number_online_users=number_online_users, number_users=number_users)
     
+@app.route('/chat/<group_id>/options')
+@login_required
+def chat_options(group_id):
+    group_id = int(group_id)
+    if GroupTable.check_group_exists(group_id) == False:
+        abort(404)
+    elif UserTable.check_user_in_group(current_user.username, group_id) == False:
+        abort(403)
+    else:
+        group_display_name = GroupTable.get_group_record_by_group_id(group_id)['group_name']
+        number_online_users = GroupTable.get_number_of_online_users(group_id)
+        number_users = GroupTable.get_number_of_users(group_id)
+        datetime_created = GroupTable.get_group_datetime_created(group_id)
+        
+        return render_template('chat_options.html', group_display_name=group_display_name, group_id=str(group_id), title=f"{group_display_name} | Options", number_online_users=number_online_users, number_users=number_users, datetime_created=datetime_created)    
+
 @app.route('/group-invites')
 @login_required
 def group_invites():
@@ -286,10 +322,9 @@ def create_group():
             # 4. create group (add current user automatically, send invite requests to other users)
             # 5. redirect to group chat
             # 6. add notice in chat if only one person in group???????
-        return render_template('create_group.html', form=form)
+        return render_template('create_group.html', form=form, title='Create Group')
     
     
-    return render_template('create_group.html', title='Create Group')
 
 
 @app.route('/sign-in', methods=['GET', 'POST'])
@@ -361,7 +396,7 @@ def about():
 
 
 @app.errorhandler(403)
-def not_found_error(error):
+def forbidden_error(error):
     return render_template('403.html'), 403
 
 @app.errorhandler(404)

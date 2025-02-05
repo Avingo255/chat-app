@@ -81,26 +81,7 @@ body {
     font-style: italic;
     margin: auto;
 }
-/*
-.chat-window-navbar {
-    background-color: #1f1f1f;
-    padding: 12px 22px;
-    border-bottom: 1px solid #333333;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
 
-.chat-window-navbar .title {
-    font-size: 24px;
-}
-
-.chat-window-navbar .actions a {
-    color: #ffffff;
-    margin-left: 18px;
-    text-decoration: none;
-    font-size: 16px;
-}*/
 .chat-window-navbar {
     background-color: #1f1f1f;
     padding: 12px 22px;
@@ -178,11 +159,9 @@ body {
     max-width: 70%;
 }
 
-/* New style to adjust margin when message-info is missing */
 .message:not(:has(.message-info)) {
     margin-top: -16px;
     margin-bottom: 20px;
-     /* Smaller margin for messages without message-info */
 }
 
 .message.current-user .text {
@@ -238,5 +217,117 @@ body {
     -webkit-mask-composite: source-out;
             mask-composite: subtract;
     animation: messages-loader 1s infinite linear;
-  }
-  @keyframes messages-loader {to{transform: rotate(1turn)}}
+}
+
+@keyframes messages-loader {
+    to {
+        transform: rotate(1turn)
+    }
+}
+
+/* New styles for group options */
+.group-options {
+    padding: 20px;
+    background-color: #121212;
+    height: calc(100vh - 128px);
+    overflow-y: auto;
+}
+
+.group-options h2 {
+    font-size: 24px;
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+.group-details {
+    margin-bottom: 20px;
+    color: #888;
+    font-size: 14px;
+}
+
+.group-id, .group-created {
+    color: #888;
+}
+
+.user-list h3 {
+    font-size: 18px;
+    margin-top: 30px;
+    margin-bottom: 10px;
+}
+
+.user-list ul {
+    list-style-type: none;
+    padding: 0;
+    margin-bottom: 30px; /* Added space beneath the user list */
+}
+
+.user-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding: 15px;
+    background-color: #1f1f1f;
+    border-radius: 5px;
+    width: 50%;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+}
+
+.user-display-name {
+    font-weight: 500;
+    margin-right: 10px;
+}
+
+.user-username {
+    color: #888;
+}
+
+.user-status {
+    font-size: 14px;
+    padding-left: 15px;
+    position: relative;
+}
+
+.user-status::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.user-status.online::before {
+    background-color: #4CAF50;
+}
+
+.user-status.offline::before {
+    background-color: #888;
+}
+
+.leave-group-container {
+    display: flex;
+    justify-content: flex-start;
+    margin-top: 30px; /* Increased space above the Leave Group button */
+}
+
+.leave-group {
+    padding: 12px 18px;
+    background-color: #c62828;
+    color: #ffffff;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.leave-group:hover {
+    background-color: #b71c1c;
+}

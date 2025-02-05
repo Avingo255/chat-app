@@ -1,0 +1,84 @@
+{% extends "group_list.html" %}
+
+{% block title %}
+<title>Home</title>
+{% endblock %}
+
+{% block head %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/chat_options_styles.css') }}">
+<script src="{{ url_for('static', filename='js/update_user_counts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/chat_options_script.js') }}"></script>
+<script src="{{ url_for('static', filename='js/get_group_id.js') }}"></script>
+
+
+<script>
+    var group_id = "{{ group_id }}";
+    // write script to update chat-options-link with window.origin + "/chat/" + group_id
+    document.addEventListener("DOMContentLoaded", function() {
+        document.querySelector("#chat-options-link").href = window.origin + "/chat/" + group_id;
+    });
+</script>
+
+{% endblock %}
+
+{% block dynamic_css %}
+{{ super() }}
+#group_{{ group_id }}.group {
+background-color: rgb(44,44,44);
+}
+{% endblock %}
+
+{% block content %}
+{{ super() }}
+
+<div class="chat-window">
+    <div class="chat-window-navbar">
+        <div class="title-container">
+            <div class="title">{{ group_display_name }}</div>
+            <div class="group-stats">
+                <span class="online-users">ONLINE: {{ number_online_users }}</span>
+                <span class="total-users">MEMBERS: {{ number_users }}</span>
+            </div>
+        </div>
+        <div class="actions">
+            <a id="chat-options-link" href="#">Back</a>
+        </div>
+    </div>
+
+    <!-- New content for group options -->
+    <div class="group-options">
+        <h2>Options</h2>
+        <div class="group-details">
+            <p>GROUP ID: <span class="group-id"> {{ group_id }}</span></p>
+            <p>CREATED: <span class="group-created">{{ datetime_created }}</span></p>
+        </div>
+        <div class="user-list">
+            <h3>Group Members</h3>
+            <ul>
+                <div class="user-list-container">
+                    <li>
+                        <div class="user-info">
+                            <span class="user-display-name">John Doe</span>
+                            <span class="user-username">johndoe</span>
+                        </div>
+                        <span class="user-status online">Online</span>
+                    </li>
+                    <li>
+                        <div class="user-info">
+                            <span class="user-display-name">Jane Smith</span>
+                            <span class="user-username">janesmith</span>
+                        </div>
+                        <span class="user-status offline">Offline</span>
+                    </li>
+                    <!-- Add more users as needed -->
+                </div>
+            </ul>
+        </div>
+        <div class="leave-group-container">
+            <button class="leave-group">Leave Group</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
