@@ -44,14 +44,19 @@ async function update_group_list() {
             }
              
         });
-        document.querySelector('.chat-groups').innerHTML = groupListHTML;
+
+        if (document.querySelector('.chat-groups').innerHTML !== groupListHTML) {
+            document.querySelector('.chat-groups').innerHTML = groupListHTML;
+        }
         
     
     } catch (error) {
         console.error(error);
     }
-    requestAnimationFrame(update_group_list);
+    //requestAnimationFrame(update_group_list);
 }
 
-requestAnimationFrame(update_group_list);
+//requestAnimationFrame(update_group_list); // update every frame
+setInterval(update_group_list, 1000); // update every 1 second
 
+// requestAnimationFrame(update_group_list) flickering issue exists on Microsoft Edge browser, but not on Chrome???

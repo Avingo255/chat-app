@@ -11,17 +11,83 @@ from chat_app.auth import User
 
 from chat_app.forms import SignInForm, SignUpForm, BubbleForm
 
+import re
+
 #validation function that returns True if string only has alphanumeric characters or spaces, false otherwise
-def is_alphanumeric_or_space(string):
+def is_alphanumeric_or_space(string: str) -> bool:
+    """_summary_
+    Checks if a string contains only alphanumeric characters or spaces.
+    
+    Args:
+        string (str): The string to check.
+        
+    Returns:
+        bool: True if the string contains only alphanumeric characters or spaces, False otherwise.
+    """
+    
     for char in string:
         if not char.isalnum() and not char.isspace():
             return False
     return True
 
+#used for extracting group_id from URL - used in leave_group() function
+def extract_group_id(url: str) -> int:
+    """_summary_    
+    Extracts the group ID from a given URL.
+    
+    Args:
+        url (str): The URL string from which to extract the group ID.
+    
+    Returns:
+        int: The extracted group ID if the URL matches the expected pattern, otherwise None.
+    """
+
+    # Regex pattern to match the URL format
+    pattern = r'/chat/(\d+)(?:/options)?$'
+    
+    # Detailed explanation of the regex pattern:
+    # /chat/   : Matches the literal string "/chat/"
+    # (        : Start of capturing group
+    #   \d+    : Matches one or more digits (0-9)
+    # )        : End of capturing group
+    # (?:      : Start of non-capturing group
+    #   /options : Matches the literal string "/options"
+    # )?       : End of non-capturing group, ? makes this group optional
+    # $        : Asserts position at the end of the string
+    
+    # Search for the pattern in the URL
+    match = re.search(pattern, url)
+    
+    if match:
+        # Extract the group_id and convert to int
+        group_id = int(match.group(1))
+        return group_id
+    else:
+        # Return None if no match is found
+        return None
 
 #
 # APIS
 #
+
+#route to remove current_user from a group
+@app.route('/leave-group', methods = ['POST'])
+def leave_group():
+    if current_user.is_authenticated == False:
+        abort(403)
+    else:
+        print('HELLO')
+        print(extract_group_id(request.referrer))
+        group_id = extract_group_id(request.referrer)
+        
+        if group_id == None:
+            flash('Error: Invalid group ID')
+        elif UserTable.check_user_in_group(current_user.username, group_id) == False:
+            abort(403)
+        else:
+            UserGroupTable.delete_user_group(current_user.username, group_id)
+            flash('You have left the group, never to return.')
+        return redirect(url_for('index'))
 
 #route to get number of online users in a group
 @app.route('/number-online-users', methods = ['POST'])
