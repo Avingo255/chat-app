@@ -203,6 +203,39 @@ class UserTable:
             result = query_db(query, parameter_dictionary=parameter_dictionary)
             return result[0][0] == 1
     
+    @staticmethod
+    def get_number_user_groups(username: str) -> int:
+        """_summary_
+        Returns number of groups user is in
+        
+        Args:
+            username (str): username (PK) of user to get number of groups for
+        
+        Raises:
+            Exception: username is empty
+            Exception: username not in table
+
+        Returns:
+            int: number of groups user is in
+        """
+        
+        if username in UserTable.INVALID_FIELD_VALUES:
+            raise Exception("Error: Username cannot be empty.")
+        elif username not in UserTable.get_all_usernames():
+            raise Exception(f"Error: User '{username}' does not exist.")
+        else:
+            query = """
+            SELECT COUNT(group_id) 
+            FROM 
+                database1.user_group 
+            WHERE 
+                username = :username;
+            """
+            parameter_dictionary = {
+                'username': username
+            }
+            result = query_db(query, parameter_dictionary=parameter_dictionary)
+            return int(result[0][0])
     
     @staticmethod
     def get_user_groups(username: str) -> dict:

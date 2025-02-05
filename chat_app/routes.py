@@ -300,7 +300,11 @@ def cancel_outgoing_invite():
 @app.route('/index')
 def index():
     if current_user.is_authenticated:
-        return render_template('index.html', title=f'{current_user.display_name}\'s chats')
+        if UserTable.get_user_groups(current_user.username) == []:
+            placeholder_message = "You are not in any groups. Click on 'Create Group' to end your solitude."
+        else:
+            placeholder_message = "Select a group chat to continue."
+        return render_template('index.html', title=f'{current_user.display_name}\'s chats', placeholder_message=placeholder_message)
     else:
         return redirect(url_for('sign_in'))
 
@@ -382,12 +386,6 @@ def create_group():
                     InviteRequestTable.create_invite_request(username, current_user.username, group_id, 'pending')
                 return redirect(url_for('chat_window', group_id=group_id))
                 
-            
-            # 2. if not valid, flash message
-            # 3. add element to let users add group name
-            # 4. create group (add current user automatically, send invite requests to other users)
-            # 5. redirect to group chat
-            # 6. add notice in chat if only one person in group???????
         return render_template('create_group.html', form=form, title='Create Group')
     
     
