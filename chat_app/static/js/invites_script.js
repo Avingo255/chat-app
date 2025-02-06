@@ -179,14 +179,11 @@ async function update_received_invite_list() {
                                         </div>
                                       </div>
                                       `;
+                document.querySelector('#received.tab-content').innerHTML = invitationListHTML;
             } else if (document.querySelector('#received.tab-content').innerHTML !== invitationListHTML) {
                 document.querySelector('#received.tab-content').innerHTML = invitationListHTML;
                 await scroll_to_top();
-            } 
-            /*else {
-                document.querySelector('#received.tab-content').innerHTML = invitationListHTML;
-            } */
-
+            }
         }
 
     } catch (error) {
