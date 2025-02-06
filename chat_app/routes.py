@@ -24,11 +24,8 @@ def is_alphanumeric_or_space(string: str) -> bool:
     Returns:
         bool: True if the string contains only alphanumeric characters or spaces, False otherwise.
     """
+    return bool(re.match(r'^[a-zA-Z0-9 ]*$', string))
     
-    for char in string:
-        if not char.isalnum() and not char.isspace():
-            return False
-    return True
 
 #used for extracting group_id from URL - used in leave_group() function
 def extract_group_id(url: str) -> int:
@@ -301,7 +298,7 @@ def cancel_outgoing_invite():
 def index():
     if current_user.is_authenticated:
         if UserTable.get_user_groups(current_user.username) == []:
-            placeholder_message = "You are not in any groups. Click on 'Create Group' to end your solitude."
+            placeholder_message = "You are not in any groups. Click on 'Create Group' or check 'Group Invites' to end your solitude."
         else:
             placeholder_message = "Select a group chat to continue."
         return render_template('index.html', title=f'{current_user.display_name}\'s chats', placeholder_message=placeholder_message)
@@ -389,8 +386,6 @@ def create_group():
         return render_template('create_group.html', form=form, title='Create Group')
     
     
-
-
 @app.route('/sign-in', methods=['GET', 'POST'])
 def sign_in():
     if current_user.is_authenticated:
@@ -406,7 +401,7 @@ def sign_in():
                 #2. password is correct
                 
                 #login
-                user_obj = User(user['username'], user['display_name'], user['email_address'], user['datetime_joined'], \
+                user_obj = User(user['username'], user['display_name'], user['form_group'], user['datetime_joined'], \
                     user['password_hash'], user['is_authenticated'], user['is_active'], user['is_anonymous'])
                 UserTable.update_existing_user_field(user['username'], 'is_authenticated', '1')
                 login_user(user_obj, remember=form.remember_me.data)
@@ -443,11 +438,13 @@ def sign_up():
     form = SignUpForm()
     
     if form.validate_on_submit():
-        UserTable.create_user(form.username.data, form.display_name.data, form.email_address.data, form.password.data)
-        
-        flash('Congratulations, you are now a registered user!')
-        return redirect(url_for('sign_in'))
-    
+        try:
+            UserTable.create_user(form.username.data, form.display_name.data, form.form_group.data, form.password.data)
+            flash('Congratulations, you are now a registered user!')
+            return redirect(url_for('sign_in'))
+        except Exception as e:
+            flash(e)
+            
     return render_template('sign-up.html', title='Sign Up', form=form)
 
 @app.route('/about')

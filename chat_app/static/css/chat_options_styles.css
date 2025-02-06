@@ -282,8 +282,10 @@ body {
     margin-right: 10px;
 }
 
-.user-username {
+
+.user-username, .user-form-group {
     color: #888;
+    margin-right: 10px;
 }
 
 .user-status {

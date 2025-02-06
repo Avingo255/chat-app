@@ -2,29 +2,36 @@ from werkzeug.security import generate_password_hash
 from chat_app.database_operations.cloud_database import query_db #use this when running server
 #from cloud_database import query_db #use this when running this file on its own
 
-import datetime
+import re
 
 class UserTable:
     """Represents user table in database1"""   
     INVALID_FIELD_VALUES = [None, '']
-    
-    @staticmethod
-    def get_all_usernames() -> list:
-        """returns list of all usernames"""
-        result = query_db("SELECT username FROM user;")
-        if result == None:
-            return []
-        else:
-            to_return = []
-            for each_tuple in result:
-                to_return.append(each_tuple[0])
-            return to_return
         
     @staticmethod
     def get_number_of_users() -> int:
-        """Returns number of users in user table"""
+        """_summary_
+        Returns number of users in user table
+        
+        Returns:
+            int: number of users in user table
+        """
         result = query_db("SELECT COUNT(username) FROM user;")
         return result[0][0]
+    
+    @staticmethod
+    def check_username_exists(username: str) -> bool:
+        """_summary_
+        Checks if username exists in user table
+        
+        Args:
+            username (str): username to check
+            
+        Returns:
+            bool: True if username exists, False otherwise
+        """
+        result = query_db("SELECT COUNT(username) FROM user WHERE username = :username;", parameter_dictionary={'username': username})
+        return result[0][0] > 0
         
         
     @staticmethod
@@ -64,63 +71,64 @@ class UserTable:
         else:
             return [False, reasons]
         
-        
     @staticmethod
-    def check_email_address_valid(email_address: str) -> list:
-        """Checks if email address is valid
+    def check_form_group_valid(form_group: str) -> bool:
+        """_summary_
+        Checks if form_group is valid
         
         Args:
-            email_address (str): email address to check
+            form_group (str): form_group to check
         
         Returns:
-            list: index 0: True if email address is valid, False otherwise
-                    index 1: invalid email address error message
+            bool: True if form_group is valid, False otherwise
         """
-        invalid_email_address_message = "Error: Invalid email address: Must have exactly one '@' and at least one '.' character."
-        return ['@' in email_address and '.' in email_address and email_address.count('@') == 1, invalid_email_address_message]
-
+        if form_group in UserTable.INVALID_FIELD_VALUES:
+            return False
+        
+        pattern = r"^(L6|U6)[A-Z]{2,3}$"
+        return bool(re.match(pattern, form_group))
     
     # CREATE
     @staticmethod
-    def create_user(username: str, display_name: str, email_address: str, raw_password: str) -> None:
+    def create_user(username: str, display_name: str, form_group: str, raw_password: str) -> None:
         """_summary_
-        Creates a user in the user table - calling context must specify username, display_name, email_address, and raw_password
+        Creates a user in the user table - calling context must specify username, display_name, form_group, and raw_password
         
         Args:
             username (str): username (PK) of user
             display_name (str): display name of user
-            email_address (str): email address of user, must meet criteria specified by UserTable.check_email_address_valid
+            form_group (str): form_group of user, must meet criteria specified by UserTable.check_form_group_valid
             raw_password (str): raw password of user, must meet criteria specified by UserTable.validate_password
         
         Raises:
-            Exception: username, display_name, email_address, or raw_password is empty
-            Exception: email_address is invalid
+            Exception: username, display_name, form_group, or raw_password is empty
+            Exception: form_group is invalid
             Exception: password is invalid
             Exception: username already exists
         
         Returns:
             None
         """
-        if username in UserTable.INVALID_FIELD_VALUES or display_name in UserTable.INVALID_FIELD_VALUES or email_address \
+        if username in UserTable.INVALID_FIELD_VALUES or display_name in UserTable.INVALID_FIELD_VALUES or form_group \
             in UserTable.INVALID_FIELD_VALUES or raw_password in UserTable.INVALID_FIELD_VALUES:
             raise Exception("Error: A field value is empty.")
         
-        elif not UserTable.check_email_address_valid(email_address)[0]:
-            raise Exception(UserTable.check_email_address_valid(email_address)[1])
+        elif not UserTable.check_form_group_valid(form_group):
+            raise Exception(f"Form Group '{form_group}' is invalid. Must begin with 'U6' or 'L6' and end with 2 or 3 capital letters.")
         
         elif UserTable.validate_password(raw_password)[0] == False:
             raise Exception(f"Error: Invalid password: {UserTable.validate_password(raw_password)[1]}")
 
-        elif username not in UserTable.get_all_usernames() or UserTable.get_all_usernames() == []:
+        elif UserTable.check_username_exists(username) == False:
             parameter_dictionary = {
                 'username': username,
                 'display_name': display_name,
-                'email_address': email_address,
+                'form_group': form_group,
                 'password_hash': generate_password_hash(raw_password)
             }
             query = """
-            INSERT INTO database1.user (username, display_name, email_address, password_hash)
-            VALUES (:username, :display_name, :email_address, :password_hash);
+            INSERT INTO database1.user (username, display_name, form_group, password_hash)
+            VALUES (:username, :display_name, :form_group, :password_hash);
             """
             return query_db(query, parameter_dictionary=parameter_dictionary, no_return=True)
         else:
@@ -141,12 +149,12 @@ class UserTable:
             Exception: username not in table
 
         Returns:
-            dict: dictionary of user data (username, display_name, email_address, datetime_joined, password_hash, is_authenticated, is_active, is_anonymous)
+            dict: dictionary of user data (username, display_name, form_group, datetime_joined, password_hash, is_authenticated, is_active, is_anonymous)
         """
         
         if username in UserTable.INVALID_FIELD_VALUES:
             raise Exception("Error: Username cannot be empty.")
-        elif username not in UserTable.get_all_usernames():
+        elif UserTable.check_username_exists(username) == False:
             raise Exception(f"Error: User '{username}' does not exist.")
         else:
             parameter_dictionary = {
@@ -157,7 +165,7 @@ class UserTable:
             dictionary_output = {
                 'username': raw_tuple_output[0],
                 'display_name': raw_tuple_output[1],
-                'email_address': raw_tuple_output[2],
+                'form_group': raw_tuple_output[2],
                 'datetime_joined': raw_tuple_output[3],
                 'password_hash': raw_tuple_output[4],
                 'is_authenticated': raw_tuple_output[5],
@@ -180,9 +188,9 @@ class UserTable:
         """
         if username in UserTable.INVALID_FIELD_VALUES or group_id in UserTable.INVALID_FIELD_VALUES:
             raise Exception("Error: A field value is empty.")
-        elif username not in UserTable.get_all_usernames():
+        elif UserTable.check_username_exists(username) == False:
             raise Exception(f"Error: User '{username}' does not exist.")
-        elif group_id not in GroupTable.get_all_group_ids():
+        elif GroupTable.check_group_exists(group_id) == False:
             raise Exception(f"Error: Group '{group_id}' does not exist.")
         else:
             query = """
@@ -221,7 +229,7 @@ class UserTable:
         
         if username in UserTable.INVALID_FIELD_VALUES:
             raise Exception("Error: Username cannot be empty.")
-        elif username not in UserTable.get_all_usernames():
+        elif UserTable.check_username_exists(username) == False:
             raise Exception(f"Error: User '{username}' does not exist.")
         else:
             query = """
@@ -256,7 +264,7 @@ class UserTable:
         
         if username in UserTable.INVALID_FIELD_VALUES:
             raise Exception("Error: Username cannot be empty.")
-        elif username not in UserTable.get_all_usernames():
+        elif UserTable.check_username_exists(username) == False:
             raise Exception(f"Error: User '{username}' does not exist.")
         else:
             query = """
@@ -342,7 +350,7 @@ class UserTable:
         
         if username in UserTable.INVALID_FIELD_VALUES:
             raise Exception("Error: Username cannot be empty.")
-        elif username not in UserTable.get_all_usernames():
+        elif UserTable.check_username_exists(username) == False:
             raise Exception(f"Error: User '{username}' does not exist.")
         else:
             query = """
@@ -379,7 +387,7 @@ class UserTable:
     #UPDATE
     @staticmethod
     def update_existing_user_field(username: str, field: str, new_value: str) -> None:
-        """field can be 'username', 'display_name', 'email_address', 'password_hash', 'is_authenticated', 'is_active'
+        """field can be 'username', 'display_name', 'form_group', 'password_hash', 'is_authenticated', 'is_active'
         if field to update is 'password_hash', new_value can be raw password
         cannot update 'datetime_joined' or 'is_anonymous' fields
         Note: even if new_value is a boolean, it must be passed as a string for the sql query to work"""
@@ -389,13 +397,13 @@ class UserTable:
         
         Args:
             username (str): username (PK) of user to update
-            field (str): field to update, must be one of: [username, display_name, email_address, password_hash, is_authenticated, is_active]
+            field (str): field to update, must be one of: [username, display_name, form_group, password_hash, is_authenticated, is_active]
             new_value (str): new value to update field with
             
         Raises: 
             Exception: field is invalid
             Exception: new_value is empty
-            Exception: email_address is invalid
+            Exception: form_group is invalid
             Exception: username already exists
             Exception: display_name has not changed
         
@@ -404,8 +412,8 @@ class UserTable:
         """
         
         #1. VALIDATE
-        if field not in ['username', 'display_name', 'email_address', 'password_hash', 'is_authenticated', 'is_active']: #check if field is valid
-            raise Exception("Error: Invalid field name. Field name must be one of [username, display_name, email_address, password_hash, is_authenticated, is_active].\
+        if field not in ['username', 'display_name', 'form_group', 'password_hash', 'is_authenticated', 'is_active']: #check if field is valid
+            raise Exception("Error: Invalid field name. Field name must be one of [username, display_name, form_group, password_hash, is_authenticated, is_active].\
                 Cannot update 'datetime_joined' or 'is_anonymous'.")
         
         elif new_value in UserTable.INVALID_FIELD_VALUES: #check if new value is empty
@@ -414,9 +422,9 @@ class UserTable:
         elif field == 'password_hash': #hash new password
             new_value = generate_password_hash(new_value)
             
-        elif field == 'email_address': #check email address valid
-            if not UserTable.check_email_address_valid(new_value)[0]:
-                raise Exception("Error: Invalid email address.")
+        elif field == 'form_group': #check form_group valid
+            if not UserTable.check_form_group_valid(new_value):
+                raise Exception(f"Error: Invalid form group {new_value}.")
             
         elif username == new_value and field == 'username': #check username has changed
         #if condition field == 'username' was not present, user would not be able to have 
@@ -424,24 +432,24 @@ class UserTable:
             raise Exception("Error: Username has not changed.")
                
         elif field == 'username': #check username unique
-            if new_value in UserTable.get_all_usernames():
+            if UserTable.check_username_exists(new_value):
                 raise Exception(f"Error: Username '{new_value}' already taken.")
             
         elif field == 'display_name' and new_value == UserTable.get_user_record_by_username(username)['display_name']: #check display name has changed
             raise Exception("Error: Display name has not changed.")
         
-        elif field == 'email_address' and new_value == UserTable.get_user_record_by_username(username)['email_address']: #check email address has changed
-            raise Exception("Error: Email address has not changed.")
+        elif field == 'form_group' and new_value == UserTable.get_user_record_by_username(username)['form_group']: #check form_group has changed
+            raise Exception("Error: Form group has not changed.")
         
         # do not check if password has changed, as this would effectively become a password check function            
         
         #2. NOW UPDATE
-        elif username in UserTable.get_all_usernames():
+        elif UserTable.check_username_exists(username):
             parameter_dictionary = {
                 'username': username,
                 'new_value': new_value
             }
-            
+            # we have already made sure that field is permitted value, so okay to not parameterise here
             query = f"""
             UPDATE database1.user
             SET {field} = :new_value
@@ -470,7 +478,7 @@ class UserTable:
         Returns:
             None
         """
-        if username in UserTable.get_all_usernames():
+        if UserTable.check_username_exists(username):
             parameter_dictionary = {
                 'username': username
             }
@@ -484,37 +492,31 @@ class UserTable:
         
 class GroupTable:
     INVALID_FIELD_VALUES = [None, '']
-    
+       
     @staticmethod
-    def get_all_group_ids():
-        """returns list of all group_ids"""
-        result = query_db("SELECT group_id FROM database1.group;")
-        if result == None:
-            return []
-        else:
-            to_return = []
-            for each_tuple in result:
-                to_return.append(each_tuple[0])
-            return to_return
+    def check_group_exists(group_id: int) -> bool:
+        """_summary_
+        Checks if group with group_id exists
+            
+        Args:
+            group_id (int): primary key field of group table
+            
+        Returns:
+            bool: True if group exists, False otherwise
+        """
         
+        parameter_dictionary = {
+            'group_id': group_id
+        }
+        query = "SELECT COUNT(*) FROM database1.group WHERE group_id = :group_id;"
+        result = query_db(query, parameter_dictionary=parameter_dictionary)
+        return result[0][0] > 0
+    
     @staticmethod
     def get_number_of_groups() -> int:
         """Returns number of groups in group table"""
         result = query_db("SELECT COUNT(group_id) FROM database1.group;")
         return result[0][0]
-        
-    @staticmethod
-    def check_group_exists(group_id: int) -> bool:
-        """_summary_
-        Checks if group with group_id exists
-        
-        Args:
-            group_id (int): primary key field of group table
-        
-        Returns:
-            bool: True if group exists, False otherwise
-        """
-        return group_id in GroupTable.get_all_group_ids()
     
     @staticmethod
     def get_last_group_id():
@@ -525,7 +527,6 @@ class GroupTable:
             int: last group_id that was created
         """
         result = query_db("SELECT MAX(group_id) FROM database1.group;")
-        
         return result[0][0]
     
     
@@ -577,7 +578,7 @@ class GroupTable:
         """
         if group_id in GroupTable.INVALID_FIELD_VALUES:
             raise Exception("Error: Group ID cannot be empty.")
-        elif group_id not in GroupTable.get_all_group_ids():
+        elif GroupTable.check_group_exists(group_id) == False:
             raise Exception(f"Error: Group with '{group_id}' does not exist.")
         else:
             parameter_dictionary = {
@@ -599,7 +600,7 @@ class GroupTable:
         """Returns number of users in a given group"""
         if group_id in GroupTable.INVALID_FIELD_VALUES:
             raise Exception("Error: Group ID cannot be empty.")
-        elif group_id not in GroupTable.get_all_group_ids():
+        elif GroupTable.check_group_exists(group_id) == False:
             raise Exception(f"Error: Group with '{group_id}' does not exist.")
         else:
             parameter_dictionary = {
@@ -613,7 +614,7 @@ class GroupTable:
         """Returns number of online users in a given group"""
         if group_id in GroupTable.INVALID_FIELD_VALUES:
             raise Exception("Error: Group ID cannot be empty.")
-        elif group_id not in GroupTable.get_all_group_ids():
+        elif GroupTable.check_group_exists(group_id) == False:
             raise Exception(f"Error: Group with '{group_id}' does not exist.")
         else:
             parameter_dictionary = {
@@ -649,7 +650,7 @@ class GroupTable:
         if group_id in GroupTable.INVALID_FIELD_VALUES:
             raise Exception("Error: Group ID cannot be empty.")
         
-        elif group_id not in GroupTable.get_all_group_ids():
+        elif GroupTable.check_group_exists(group_id) == False:
             raise Exception(f"Error: Group with '{group_id}' does not exist.")
         
         else:
@@ -665,7 +666,7 @@ class GroupTable:
         
     def get_group_user_details(group_id: int) -> dict:
         """_summary_
-        Returns dictionary of username, user display name, is_authenticated for every user in the group
+        Returns dictionary of username, user display name, form group,  is_authenticated for every user in the group
 
         Args:
             group_id (int): primary key field of group table
@@ -675,11 +676,11 @@ class GroupTable:
             Exception: group with group_id does not exist
 
         Returns:
-            dict: dictionary of username, user display name, is_authenticated for every user in the group
+            dict: dictionary of username, user display name, form group, is_authenticated for every user in the group
         """
         if group_id in GroupTable.INVALID_FIELD_VALUES:
             raise Exception("Error: Group ID cannot be empty.")
-        elif group_id not in GroupTable.get_all_group_ids():
+        elif GroupTable.check_group_exists(group_id) == False:
             raise Exception(f"Error: Group with '{group_id}' does not exist.")
         else:
             parameter_dictionary = {
@@ -688,7 +689,8 @@ class GroupTable:
             query = """
             SELECT 
                 u.username, 
-                u.display_name, 
+                u.display_name,
+                u.form_group, 
                 u.is_authenticated 
             FROM 
                 database1.user_group ug
@@ -704,7 +706,8 @@ class GroupTable:
                 user_details.append({
                     "username": result[0],
                     "display_name": result[1],
-                    "is_authenticated": result[2]
+                    "form_group": result[2],
+                    "is_authenticated": result[3]
                 })
             return user_details
     
@@ -724,7 +727,7 @@ class GroupTable:
         """
         if group_id in GroupTable.INVALID_FIELD_VALUES:
             raise Exception("Error: Group ID cannot be empty.")
-        elif group_id not in GroupTable.get_all_group_ids():
+        elif GroupTable.check_group_exists(group_id) == False:
             raise Exception(f"Error: Group with '{group_id}' does not exist.")
         else:
             parameter_dictionary = {
@@ -752,7 +755,7 @@ class GroupTable:
         """
         if group_id in GroupTable.INVALID_FIELD_VALUES:
             raise Exception("Error: Group ID cannot be empty.")
-        elif group_id not in GroupTable.get_all_group_ids():
+        elif GroupTable.check_group_exists(group_id) == False:
             raise Exception(f"Error: Group with '{group_id}' does not exist.")
         else:
             parameter_dictionary = {
@@ -800,7 +803,7 @@ class GroupTable:
         """
         if group_id in GroupTable.INVALID_FIELD_VALUES:
             raise Exception("Error: Group ID cannot be empty.")
-        elif group_id not in GroupTable.get_all_group_ids():
+        elif GroupTable.check_group_exists(group_id) == False:
             raise Exception(f"Error: Group with '{group_id}' does not exist.")
         else:
             parameter_dictionary = {
@@ -857,7 +860,7 @@ class GroupTable:
         elif new_group_name == GroupTable.get_group_record_by_group_id(group_id)['group_name']: #check group name has changed
             raise Exception("Error: Group name has not changed.") 
         
-        elif group_id in GroupTable.get_all_group_ids():
+        elif GroupTable.check_group_exists(group_id):
             query = """
             UPDATE database1.group
             SET group_name = :new_group_name
@@ -885,7 +888,7 @@ class GroupTable:
         Returns:
             None        
         """
-        if group_id in GroupTable.get_all_group_ids():
+        if GroupTable.check_group_exists(group_id):
             parameter_dictionary = {
                 'group_id': group_id
             }
@@ -905,18 +908,7 @@ class UserGroupTable:
     #read methods will be part of the User and Group classes
     #as they are more relevant to those classes
     #no point having update methods
-    
-    @staticmethod
-    def get_all_user_group_ids() -> list:
-        """_summary_
-        Returns list of all user_group_ids
-        Returns:
-            list: all user_group_ids (PK for user_group table)
-        """
-        query = "SELECT username, group_id FROM database1.user_group;"
-        result = query_db(query)
-        return [list(row) for row in result]
-    
+  
     
     @staticmethod
     def create_user_group(username: str, group_id: int) -> None:
@@ -939,13 +931,13 @@ class UserGroupTable:
         if username in UserGroupTable.INVALID_FIELD_VALUES or group_id in UserGroupTable.INVALID_FIELD_VALUES:
             raise Exception("Error: A field value is empty.")
         
-        elif username not in UserTable.get_all_usernames():
+        elif UserTable.check_username_exists(username) == False:
             raise Exception(f"Error: User '{username}' does not exist.")
         
-        elif group_id not in GroupTable.get_all_group_ids():
+        elif GroupTable.check_group_exists(group_id) == False:
             raise Exception(f"Error: Group '{group_id}' does not exist.")
         
-        elif [username, group_id] in UserGroupTable.get_all_user_group_ids():
+        elif UserTable.check_user_in_group(username, group_id):
             raise Exception(f"Error: User '{username}' is already in group '{group_id}'.")
         
         else:
@@ -996,22 +988,24 @@ class UserGroupTable:
 class MessageTable:
     INVALID_FIELD_VALUES = [None, '']
     MAX_MESSAGE_LENGTH = 2000
-    
+        
     @staticmethod
-    def get_all_message_ids() -> list:
-        """_summary_ 
-        returns list of all message_ids
+    def check_message_exists(message_id: int) -> bool:
+        """_summary_
+        Checks if message with message_id exists
+        
+        Args:
+            message_id (int): primary key field of message table
+        
         Returns:
-            list: all message_ids (PK for message table)
+            bool: True if message exists, False otherwise
         """
-        result = query_db("SELECT message_id FROM database1.message;")
-        if result == None:
-            return []
-        else:
-            all_message_ids = []
-            for each_tuple in result:
-                all_message_ids.append(each_tuple[0])
-            return all_message_ids
+        parameter_dictionary = {
+            'message_id': message_id
+        }
+        query = "SELECT COUNT(*) FROM database1.message WHERE message_id = :message_id;"
+        result = query_db(query, parameter_dictionary=parameter_dictionary)
+        return result[0][0] > 0
     
     @staticmethod
     def get_number_of_messages() -> int:
@@ -1050,10 +1044,10 @@ class MessageTable:
             or group_id in MessageTable.INVALID_FIELD_VALUES:
             raise Exception("Error: A field value is empty.") #No empty messages, senders, or groups
         
-        elif sender_username not in UserTable.get_all_usernames():
+        elif UserTable.check_username_exists(sender_username) == False:
             raise Exception(f"Error: User '{sender_username}' does not exist.")
         
-        elif group_id not in GroupTable.get_all_group_ids():
+        elif GroupTable.check_group_exists(group_id) == False:
             raise Exception(f"Error: Group with group_id '{group_id}' does not exist.")
         
         elif UserTable.check_user_in_group(sender_username, group_id) == False:
@@ -1089,7 +1083,7 @@ class MessageTable:
         """
         if message_id in MessageTable.INVALID_FIELD_VALUES:
             raise Exception("Error: Message ID cannot be empty.")
-        elif message_id not in MessageTable.get_all_message_ids():
+        elif MessageTable.check_message_exists(message_id) == False:
             raise Exception(f"Error: Message with message_id '{message_id}' does not exist.")
         else:
             parameter_dictionary = {
@@ -1113,7 +1107,7 @@ class MessageTable:
         if message_id in MessageTable.INVALID_FIELD_VALUES or new_message_content in MessageTable.INVALID_FIELD_VALUES:
             raise Exception("Error: A field value is empty.")
         
-        elif message_id not in MessageTable.get_all_message_ids():
+        elif MessageTable.check_message_exists(message_id) == False:
             raise Exception(f"Error: Message with message_id '{message_id}' does not exist.")
         
         elif len(new_message_content) > MessageTable.MAX_MESSAGE_LENGTH:
@@ -1137,7 +1131,7 @@ class MessageTable:
         if message_id in MessageTable.INVALID_FIELD_VALUES:
             raise Exception("Error: Message ID cannot be empty.")
         
-        elif message_id not in MessageTable.get_all_message_ids():
+        elif MessageTable.check_message_exists(message_id) == False:
             raise Exception(f"Error: Message with message_id '{message_id}' does not exist.")
         
         else:
@@ -1184,7 +1178,7 @@ class InviteRequestTable:
         if receiver_username in InviteRequestTable.INVALID_FIELD_VALUES:
             raise Exception("Error: A field value is empty.")
         
-        elif receiver_username not in UserTable.get_all_usernames():
+        elif UserTable.check_username_exists(receiver_username) == False:
             raise Exception(f"Error: User '{receiver_username}' does not exist.")
         else:
             parameter_dictionary = {
@@ -1237,16 +1231,16 @@ class InviteRequestTable:
             or group_id in InviteRequestTable.INVALID_FIELD_VALUES or status in InviteRequestTable.INVALID_FIELD_VALUES:
             raise Exception("Error: A field value is empty.")
         
-        elif receiver_username not in UserTable.get_all_usernames():
+        elif UserTable.check_username_exists(receiver_username) == False:
             raise Exception(f"Error: User '{receiver_username}' does not exist.")
         
-        elif sender_username not in UserTable.get_all_usernames():
+        elif UserTable.check_username_exists(sender_username) == False:
             raise Exception(f"Error: User '{sender_username}' does not exist.")
         
         elif UserTable.check_user_in_group(sender_username, group_id) == False:
             raise Exception(f"User {sender_username} not in group with group_id {group_id}. User must be in the group to invite others to it. ")            
         
-        elif group_id not in GroupTable.get_all_group_ids():
+        elif GroupTable.check_group_exists(group_id) == False:
             raise Exception(f"Error: Group '{group_id}' does not exist.")
         
         elif status not in ['pending', 'accepted', 'rejected']:
@@ -1320,7 +1314,7 @@ class InviteRequestTable:
         """        
         if receiver_username in InviteRequestTable.INVALID_FIELD_VALUES:
             raise Exception("Error: A field value is empty.")
-        elif receiver_username not in UserTable.get_all_usernames():
+        elif UserTable.check_username_exists(receiver_username) == False:
             raise Exception(f"Error: User '{receiver_username}' does not exist.")
         else:
             parameter_dictionary = {
@@ -1368,7 +1362,7 @@ class InviteRequestTable:
         """
         if sender_username in InviteRequestTable.INVALID_FIELD_VALUES:
             raise Exception("Error: A field value is empty.")
-        elif sender_username not in UserTable.get_all_usernames():
+        elif UserTable.check_username_exists(sender_username) == False:
             raise Exception(f"Error: User '{sender_username}' does not exist.")
         else:
             parameter_dictionary = {

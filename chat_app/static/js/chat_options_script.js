@@ -32,6 +32,7 @@ async function update_group_user_list() {
                         <div class="user-info">
                             <span class="user-display-name">${user.display_name}</span>
                             <span class="user-username">${user.username}</span>
+                            <span class="user-form-group">${user.form_group}</span>
                         </div>
                         <span class="user-status online">Online</span>
                     </li> 
@@ -43,6 +44,7 @@ async function update_group_user_list() {
                         <div class="user-info">
                             <span class="user-display-name">${user.display_name}</span>
                             <span class="user-username">${user.username}</span>
+                            <span class="user-form-group">${user.form_group}</span>
                         </div>
                         <span class="user-status offline">Offline</span>
                     </li> 

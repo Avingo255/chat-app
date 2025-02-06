@@ -5,7 +5,7 @@ def create_user_table():
     CREATE TABLE IF NOT EXISTS database1.user (
         username VARCHAR(50) NOT NULL PRIMARY KEY,
         display_name VARCHAR(50) NOT NULL,
-        email_address VARCHAR(60),
+        form_group VARCHAR(10) NOT NULL,
         datetime_joined DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         password_hash VARCHAR(500) NOT NULL,
         is_authenticated BOOLEAN NOT NULL DEFAULT FALSE,
@@ -108,4 +108,5 @@ def setup_database():
     create_invite_request_table()
     create_delete_group_with_no_users_trigger()
 
-setup_database()
+if __name__ == '__main__':
+    setup_database()
