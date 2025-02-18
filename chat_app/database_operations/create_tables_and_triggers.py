@@ -77,27 +77,6 @@ def create_invite_request_table():
     # status can be 'pending', 'accepted', or 'rejected'
     return query_db(query, no_return=True)
 
-def create_delete_group_with_no_users_trigger():
-    query = """
-    CREATE TRIGGER IF NOT EXISTS database1.delete_group_with_no_users
-    AFTER DELETE ON database1.user_group
-    FOR EACH ROW
-    BEGIN
-        DECLARE user_count INT;
-
-        -- Count the number of users in the group
-        SELECT COUNT(*) INTO user_count
-        FROM database1.user_group
-        WHERE group_id = OLD.group_id;
-
-        -- If no users are in the group, delete the group
-        IF user_count = 0 THEN
-            DELETE FROM database1.group
-            WHERE group_id = OLD.group_id;
-        END IF;
-    END;
-    """
-    return query_db(query, no_return=True)
 
 def setup_database():
     query_db("SET FOREIGN_KEY_CHECKS = 1;", no_return=True)
@@ -106,7 +85,6 @@ def setup_database():
     create_user_group_table()
     create_message_table()
     create_invite_request_table()
-    create_delete_group_with_no_users_trigger()
 
 if __name__ == '__main__':
     setup_database()

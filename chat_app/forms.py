@@ -5,7 +5,9 @@ from wtforms.widgets import TextInput
 
 from chat_app.database_operations.models import UserTable
 
-import re
+def is_alphanumeric(field):
+    if not field.isalnum():
+        raise ValidationError('Field must be alphanumeric.')
 
 class SignInForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
@@ -14,7 +16,7 @@ class SignInForm(FlaskForm):
     submit = SubmitField('Sign In')
 
 class SignUpForm(FlaskForm):
-    username = StringField('Username', validators=[DataRequired()])
+    username = StringField('Username', validators=[DataRequired(), is_alphanumeric])
     display_name = StringField('Display Name', validators=[DataRequired()])
     form_group = StringField('Form Group', validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired()])

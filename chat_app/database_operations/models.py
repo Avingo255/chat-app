@@ -268,50 +268,51 @@ class UserTable:
             raise Exception(f"Error: User '{username}' does not exist.")
         else:
             query = """
-            WITH recent_messages AS (
-                SELECT 
-                    m.group_id,
-                    m.message_content,
-                    m.sender_username,
-                    m.message_date_time,
-                    ROW_NUMBER() OVER (PARTITION BY m.group_id ORDER BY m.message_date_time DESC) AS rn
-                FROM 
-                    database1.message m
-            ),
-            group_message_status AS (
+            SELECT *
+            FROM (
                 SELECT 
                     g.group_id,
                     g.group_name,
-                    u.username,
-                    COALESCE(rm.message_content, '') AS last_message_content,
-                    COALESCE(rm.message_date_time, NULL) AS last_message_date_time,
-                    COALESCE(ud.display_name, '') AS last_message_user_display_name,
-                    CASE WHEN COUNT(m.message_id) OVER (PARTITION BY g.group_id) > 0 THEN TRUE ELSE FALSE END AS any_messages
-                FROM 
-                    database1.group g
-                JOIN 
-                    database1.user_group ug ON g.group_id = ug.group_id
-                JOIN 
-                    database1.user u ON ug.username = u.username
-                LEFT JOIN 
-                    recent_messages rm ON g.group_id = rm.group_id AND rm.rn = 1
-                LEFT JOIN 
-                    database1.user ud ON rm.sender_username = ud.username
-                LEFT JOIN 
-                    database1.message m ON g.group_id = m.group_id
-                WHERE 
-                    u.username = :username
-            )
-            SELECT DISTINCT
-                group_id,
-                group_name,
-                any_messages,
-                last_message_user_display_name,
-                last_message_content,
-                last_message_date_time
-            FROM 
-                group_message_status;
-
+                    
+                    -- Flag if any messages exist in this group
+                    (SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END
+                     FROM database1.message m
+                     WHERE m.group_id = g.group_id) AS any_messages,
+                     
+                    -- Retrieve the display name of the sender of the latest message
+                    (SELECT u.display_name
+                     FROM database1.user u
+                     WHERE u.username = (
+                         SELECT m.sender_username
+                         FROM database1.message m
+                         WHERE m.group_id = g.group_id
+                         ORDER BY m.message_date_time DESC
+                         LIMIT 1
+                     )) AS last_message_user_display_name,
+                     
+                    -- Retrieve the content of the latest message
+                    (SELECT m.message_content
+                     FROM database1.message m
+                     WHERE m.group_id = g.group_id
+                     ORDER BY m.message_date_time DESC
+                     LIMIT 1) AS last_message,
+                     
+                    -- Retrieve the datetime of the latest message
+                    (SELECT m.message_date_time
+                     FROM database1.message m
+                     WHERE m.group_id = g.group_id
+                     ORDER BY m.message_date_time DESC
+                     LIMIT 1) AS last_message_datetime
+                     
+                FROM database1.`group` g
+                
+                WHERE g.group_id IN (
+                     SELECT ug.group_id
+                     FROM database1.user_group ug
+                     WHERE ug.username = :username
+                )
+            ) AS sub
+            ORDER BY sub.last_message_datetime DESC;
             """
         
             parameter_dictionary = {
@@ -1472,10 +1473,7 @@ class InviteRequestTable:
             return query_db(query, parameter_dictionary=parameter_dictionary, no_return=True)
         
 if __name__ == "__main__":
-    #print(UserTable.check_user_in_group("avinash255", 7))
-    #print(GroupTable.get_number_of_users(5))
-    #print(GroupTable.get_number_of_online_users(5))
+    #this is purely for testing purposes
+    #print(UserTable.get_user_groups('avingo255'))
     
-    #print(UserTable.get_pending_invite_requests("avingo255"))
-    #print(GroupTable.get_group_user_details(5))
     pass

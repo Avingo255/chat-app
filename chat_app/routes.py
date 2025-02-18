@@ -360,7 +360,8 @@ def create_group():
             # 1. check usernames are valid
             invalid_usernames = []
             for username in bubble_list:
-                if not username.isalnum() or username not in UserTable.get_all_usernames():
+                if not username.isalnum() or UserTable.check_username_exists(username) == False:
+                    
                     invalid_usernames.append(username)
             
             if len(invalid_usernames) > 0:
