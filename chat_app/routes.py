@@ -373,7 +373,7 @@ def create_group():
                 return render_template('create_group.html', form=form)
             
             elif not is_alphanumeric_or_space(group_name):
-                flash("Invalid group name - only use alphanumeric characters")
+                flash("Invalid group name - only use alphanumeric characters or spaces")
                 return render_template('create_group.html', form=form)
             else:
                 GroupTable.create_group(group_name)

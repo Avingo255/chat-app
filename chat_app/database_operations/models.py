@@ -1,5 +1,5 @@
 from werkzeug.security import generate_password_hash
-from chat_app.database_operations.cloud_database import query_db #use this when running server
+from chat_app.database_operations.database_connection import query_db #use this when running server
 #from cloud_database import query_db #use this when running this file on its own
 
 import re
@@ -126,6 +126,7 @@ class UserTable:
                 'form_group': form_group,
                 'password_hash': generate_password_hash(raw_password)
             }
+            
             query = """
             INSERT INTO database1.user (username, display_name, form_group, password_hash)
             VALUES (:username, :display_name, :form_group, :password_hash);
