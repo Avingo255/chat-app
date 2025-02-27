@@ -126,7 +126,6 @@ class UserTable:
                 'form_group': form_group,
                 'password_hash': generate_password_hash(raw_password)
             }
-            
             query = """
             INSERT INTO database1.user (username, display_name, form_group, password_hash)
             VALUES (:username, :display_name, :form_group, :password_hash);

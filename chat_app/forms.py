@@ -5,8 +5,8 @@ from wtforms.widgets import TextInput
 
 from chat_app.database_operations.models import UserTable
 
-def is_alphanumeric(field):
-    if not field.isalnum():
+def is_alphanumeric(form, field):
+    if not field.data.isalnum():
         raise ValidationError('Field must be alphanumeric.')
 
 class SignInForm(FlaskForm):
@@ -25,7 +25,7 @@ class SignUpForm(FlaskForm):
     submit = SubmitField('Sign Up')
     
     def validate_username(self, username):
-        if username in UserTable.get_all_usernames():
+        if UserTable.check_username_exists(username):
             raise ValidationError('Username already taken. Please use a different username.')
 
 
