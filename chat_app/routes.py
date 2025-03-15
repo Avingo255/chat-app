@@ -707,7 +707,7 @@ def sign_up():
     Otherwise, a sign-up form is presented to the user. If the form is submitted and 
     validated (validation conditions in forms.py, not here) successfully, a new user is created in the UserTable. Upon successful 
     registration, the user is redirected to the sign-in page with a success message. 
-    If an error occurs during user creation, an error message is flashed.
+    If an error occurs during user creation, an error message is flashed, and user will have to recomplete fields with issues in them.
     Returns:
         Response: A redirect to the index page if the user is authenticated, 
                   a redirect to the sign-in page upon successful registration, 
@@ -751,9 +751,10 @@ def about():
 @app.errorhandler(403)
 def forbidden_error(error):
     """
-    Handle 403 Forbidden error.
+    Handles 403 Forbidden error.
     Args:
-        error: The error object containing details about the forbidden error.
+        error: The error object containing details about the forbidden error - this is part of the Flask syntax for custom error pages.
+        This will not actually be used/rendered as part of the error template.
     Returns:
         rendered 403 error template and the HTTP status code 403.
     """
@@ -763,9 +764,10 @@ def forbidden_error(error):
 @app.errorhandler(404)
 def not_found_error(error):
     """
-    Handle 404 Not Found error.
+    Handles 404 Not Found error.
     Args:
-        error: The error object representing the 404 Not Found error.
+        error: The error object representing the 404 Not Found error  - this is part of the Flask syntax for custom error pages.
+        This will not actually be used/rendered as part of the error template.
     Returns:
         rendered 404 error template and the HTTP status code 404.
     """
@@ -775,9 +777,10 @@ def not_found_error(error):
 @app.errorhandler(500)
 def internal_error(error):
     """
-    Handle internal server errors by rendering a custom 500 error page.
+    Handles 500 internal server errors (in the very unlikely scenario such an error should occur) by rendering a custom 500 error page.
     Args:
-        error (Exception): The exception that triggered the internal server error.
+        error: The error object that triggered the internal server error  - this is part of the Flask syntax for custom error pages.
+        This will not actually be used/rendered as part of the error template.
     Returns:
         rendered template: A rendered 500 error template and the HTTP status code 500.
     """
