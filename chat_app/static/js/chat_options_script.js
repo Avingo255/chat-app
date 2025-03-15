@@ -1,5 +1,3 @@
-// chat_group_id is a global variable that is set externally in js/get_group_id.js
-
 document.addEventListener('DOMContentLoaded', async function () {
     requestAnimationFrame(update_group_user_list);
 });

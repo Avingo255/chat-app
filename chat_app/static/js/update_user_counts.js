@@ -1,6 +1,3 @@
-// chat_group_id is a global variable that stores the group id of the chat group the user is currently in.
-// it is created in get_group_id.js
-
 document.addEventListener('DOMContentLoaded', async function () {
     
     requestAnimationFrame(update_number_online_users);

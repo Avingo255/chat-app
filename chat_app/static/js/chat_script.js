@@ -1,7 +1,3 @@
-// chat_group_id is a global variable that stores the group id of the chat group the user is currently in.
-// it is created in get_group_id.js
-
-
 async function scroll_to_bottom() {
     // used in update_message_list to scroll to the bottom of the chat messages
     // important
